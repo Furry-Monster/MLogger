@@ -1,0 +1,85 @@
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+
+project(MLogger
+    VERSION 1.0.0
+    LANGUAGES CXX C
+)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+
+add_subdirectory(external/spdlog)
+
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
+)
+
+file(GLOB_RECURSE SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+)
+
+if(WIN32) # .dll
+    add_library(MLogger SHARED ${SOURCES})
+    set_target_properties(MLogger PROPERTIES
+        OUTPUT_NAME "mlogger_win"
+        PREFIX ""
+    )
+elseif(ANDROID) # .so
+    add_library(MLogger SHARED ${SOURCES})
+    set_target_properties(MLogger PROPERTIES
+        OUTPUT_NAME "mlogger_android"
+    )
+elseif(APPLE) # .dylib or .bundle
+    add_library(MLogger SHARED ${SOURCES})
+    set_target_properties(MLogger PROPERTIES
+        OUTPUT_NAME "mlogger_macos"
+    )
+else() # .so
+    add_library(MLogger SHARED ${SOURCES})
+    set_target_properties(MLogger PROPERTIES
+        OUTPUT_NAME "mlogger_linux"
+    )
+endif()
+
+target_link_libraries(MLogger PRIVATE spdlog::spdlog)
+
+if(WIN32)
+    target_compile_definitions(MLogger PRIVATE
+        _CRT_SECURE_NO_WARNINGS
+        NOMINMAX
+    )
+    set_target_properties(MLogger PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+elseif(ANDROID)
+    target_compile_definitions(MLogger PRIVATE
+        ANDROID
+    )
+endif()
+
+if(MSVC)
+    target_compile_options(MLogger PRIVATE
+        /W4
+        /permissive-
+    )
+else()
+    target_compile_options(MLogger PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+    )
+endif()
+
+install(TARGETS MLogger
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
