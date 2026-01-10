@@ -40,7 +40,12 @@ elseif(ANDROID) # .so
     set_target_properties(MLogger PROPERTIES
         OUTPUT_NAME "mlogger_android"
     )
-elseif(APPLE) # .dylib or .bundle
+elseif(IOS) # .a
+    add_library(MLogger STATIC ${SOURCES})
+    set_target_properties(MLogger PROPERTIES
+        OUTPUT_NAME "mlogger_ios"
+    )
+elseif(APPLE) # .dylib
     add_library(MLogger SHARED ${SOURCES})
     set_target_properties(MLogger PROPERTIES
         OUTPUT_NAME "mlogger_macos"
