@@ -5,7 +5,9 @@
 
 using namespace mlogger;
 
+#ifdef __cplusplus
 extern "C" {
+#endif   // __cplusplus extern begin
 
 EXPORT_API int init(const char* log_path, size_t max_file_size, int max_files, int async_mode,
                     int thread_pool_size, int min_log_level)
@@ -71,4 +73,6 @@ EXPORT_API void terminate()
     manager.terminate();
 }
 
-}   // extern "C"
+#ifdef __cplusplus
+}
+#endif   // __cplusplus extern end

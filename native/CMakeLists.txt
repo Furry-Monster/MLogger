@@ -98,11 +98,18 @@ if(BUILD_TESTS)
     target_link_libraries(test_simple PRIVATE MLogger)
     target_include_directories(test_simple PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+    # C interface test
+    add_executable(test_c_interface tests/test_c_interface.c)
+    target_link_libraries(test_c_interface PRIVATE MLogger)
+    target_include_directories(test_c_interface PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
     if(MSVC)
         target_compile_options(test_mlogger PRIVATE /W4 /permissive-)
         target_compile_options(test_simple PRIVATE /W4 /permissive-)
+        target_compile_options(test_c_interface PRIVATE /W4)
     else()
         target_compile_options(test_mlogger PRIVATE -Wall -Wextra -Wpedantic)
         target_compile_options(test_simple PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(test_c_interface PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 endif()
