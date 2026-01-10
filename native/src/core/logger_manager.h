@@ -2,6 +2,7 @@
 #define LOGGER_MANAGER_H
 
 #include "logger_config.h"
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <spdlog/async.h>
@@ -10,6 +11,8 @@
 
 namespace mlogger
 {
+
+using ErrorCallback = std::function<void(const char*, const char*)>;
 
 class LoggerManager
 {
@@ -26,8 +29,9 @@ public:
 
     void flush();
 
-    void setLogLevel(int level);
     int  getLogLevel() const;
+    void setLogLevel(int level);
+    void setErrorCallback(ErrorCallback callback);
 
     LoggerManager(const LoggerManager&)            = delete;
     LoggerManager& operator=(const LoggerManager&) = delete;
@@ -42,7 +46,10 @@ private:
     std::shared_ptr<spdlog::async_logger> async_logger_;
     bool                                  initialized_ = false;
     bool                                  async_mode_  = false;
+    ErrorCallback                         error_callback_;
     mutable std::mutex                    mutex_;
+
+    void reportError(const char* function_name, const char* error_message) const;
 
     static spdlog::level::level_enum convertLogLevel(int level);
     static int                       convertToInt(spdlog::level::level_enum level);

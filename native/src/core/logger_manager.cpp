@@ -24,15 +24,9 @@ bool LoggerManager::initialize(const LoggerConfig& config)
     bool need_terminate = false;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (initialized_) {
-            need_terminate = true;
-        }
+        if (initialized_) need_terminate = true;
     }
-
-    if (need_terminate) {
-        // Terminate outside the lock to avoid deadlock
-        terminate();
-    }
+    if (need_terminate) terminate();
 
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -97,10 +91,11 @@ bool LoggerManager::initialize(const LoggerConfig& config)
         return true;
     } catch (const std::exception& e) {
         initialized_ = false;
-        std::cerr << "LoggerManager::initialize failed: " << e.what() << std::endl;
+        reportError("initialize", e.what());
         return false;
     } catch (...) {
         initialized_ = false;
+        reportError("initialize", "Unknown exception occurred during initialization");
         return false;
     }
 }
@@ -134,8 +129,10 @@ void LoggerManager::log(int level, const char* message)
         case spdlog::level::critical: logger_->critical(message); break;
         default: throw std::runtime_error("Invalid log level");
         }
+    } catch (const std::exception& e) {
+        reportError("log", e.what());
     } catch (...) {
-        // Silently fail
+        reportError("log", "Unknown exception occurred while logging");
     }
 }
 
@@ -168,8 +165,10 @@ void LoggerManager::logException(const char* exception_type, const char* message
         }
 
         logger_->error(full_message);
+    } catch (const std::exception& e) {
+        reportError("logException", e.what());
     } catch (...) {
-        // Silently fail
+        reportError("logException", "Unknown exception occurred while logging exception");
     }
 }
 
@@ -186,8 +185,32 @@ void LoggerManager::flush()
 
     try {
         logger_->flush();
+    } catch (const std::exception& e) {
+        reportError("flush", e.what());
     } catch (...) {
-        // Silently fail
+        reportError("flush", "Unknown exception occurred while flushing");
+    }
+}
+
+int LoggerManager::getLogLevel() const
+{
+    if (!initialized_) {
+        return 2;   // Default to INFO
+    }
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!logger_) {
+        return 2;
+    }
+
+    try {
+        return convertToInt(logger_->level());
+    } catch (const std::exception& e) {
+        reportError("getLogLevel", e.what());
+        return 2;   // Default to INFO on error
+    } catch (...) {
+        reportError("getLogLevel", "Unknown exception occurred while getting log level");
+        return 2;   // Default to INFO on error
     }
 }
 
@@ -205,27 +228,17 @@ void LoggerManager::setLogLevel(int level)
     try {
         spdlog::level::level_enum spdlog_level = convertLogLevel(level);
         logger_->set_level(spdlog_level);
+    } catch (const std::exception& e) {
+        reportError("setLogLevel", e.what());
     } catch (...) {
-        // Silently fail
+        reportError("setLogLevel", "Unknown exception occurred while setting log level");
     }
 }
 
-int LoggerManager::getLogLevel() const
+void LoggerManager::setErrorCallback(ErrorCallback callback)
 {
-    if (!initialized_) {
-        return 2;   // Default to INFO
-    }
-
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!logger_) {
-        return 2;
-    }
-
-    try {
-        return convertToInt(logger_->level());
-    } catch (...) {
-        return 2;
-    }
+    error_callback_ = std::move(callback);
 }
 
 bool LoggerManager::isInitialized() const
@@ -238,36 +251,39 @@ void LoggerManager::terminate()
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
+    // flush before terminating
     if (logger_ && !async_mode_) {
         try {
             logger_->flush();
+        } catch (const std::exception& e) {
+            reportError("terminate::flush", e.what());
         } catch (...) {
-            // Ignore
+            reportError("terminate::flush", "Unknown exception during flush");
         }
     } else if (async_logger_) {
         try {
             async_logger_->flush();
+        } catch (const std::exception& e) {
+            reportError("terminate::flush_async", e.what());
         } catch (...) {
-            // Ignore
+            reportError("terminate::flush_async", "Unknown exception during async flush");
         }
     }
 
-    // Unregister logger from spdlog registry
+    // unregister logger from spdlog registry
     if (logger_) {
         try {
             spdlog::drop("mlogger");
+        } catch (const std::exception& e) {
+            reportError("terminate::drop", e.what());
         } catch (...) {
-            // Ignore
+            reportError("terminate::drop", "Unknown exception during logger drop");
         }
     }
 
-    if (async_logger_) {
-        async_logger_.reset();
-    }
-
-    if (logger_) {
-        logger_.reset();
-    }
+    // reset shared ptrs
+    if (async_logger_) async_logger_.reset();
+    if (logger_) logger_.reset();
 
     initialized_ = false;
     async_mode_  = false;
@@ -276,6 +292,21 @@ void LoggerManager::terminate()
 LoggerManager::~LoggerManager()
 {
     terminate();
+}
+
+void LoggerManager::reportError(const char* function_name, const char* error_message) const
+{
+    if (error_callback_) {
+        try {
+            error_callback_(error_message, function_name);
+        } catch (...) {
+            // NOTE: if callback itself throws, fall back to stderr
+            std::cerr << "[MLogger Error in " << function_name << "] " << error_message
+                      << std::endl;
+        }
+    } else {
+        std::cerr << "[MLogger Error in " << function_name << "] " << error_message << std::endl;
+    }
 }
 
 spdlog::level::level_enum LoggerManager::convertLogLevel(int level)
