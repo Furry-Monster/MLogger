@@ -1,6 +1,7 @@
 #include "logger_manager.h"
 #include "core/logger_config.h"
 #include <filesystem>
+#include <iostream>
 #include <mutex>
 #include <spdlog/async.h>
 #include <spdlog/sinks/rotating_file_sink.h>
@@ -16,26 +17,34 @@ LoggerManager& LoggerManager::getInstance()
 
 bool LoggerManager::initialize(const LoggerConfig& config)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-
     if (!config.isValid()) {
         return false;
     }
 
-    if (initialized_) {
-        // re-initialize is allowed
+    bool need_terminate = false;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (initialized_) {
+            need_terminate = true;
+        }
+    }
+
+    if (need_terminate) {
+        // Terminate outside the lock to avoid deadlock
         terminate();
     }
+
+    std::lock_guard<std::mutex> lock(mutex_);
 
     try {
         // prepare directory
         std::filesystem::path log_path(config.log_path);
         std::filesystem::path log_dir = log_path.parent_path();
-        if (log_dir.empty()) {
-            throw std::runtime_error("Invalid log path");
-        }
-        if (!std::filesystem::exists(log_dir) && !std::filesystem::create_directories(log_dir)) {
-            throw std::runtime_error("Failed to create log directory");
+        if (!log_dir.empty() && log_dir != ".") {
+            if (!std::filesystem::exists(log_dir) &&
+                !std::filesystem::create_directories(log_dir)) {
+                throw std::runtime_error("Failed to create log directory");
+            }
         }
 
         // prepare configs
@@ -87,6 +96,10 @@ bool LoggerManager::initialize(const LoggerConfig& config)
         initialized_ = true;
         return true;
     } catch (const std::exception& e) {
+        initialized_ = false;
+        std::cerr << "LoggerManager::initialize failed: " << e.what() << std::endl;
+        return false;
+    } catch (...) {
         initialized_ = false;
         return false;
     }
@@ -225,9 +238,24 @@ void LoggerManager::terminate()
 {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    if (logger_) {
+    if (logger_ && !async_mode_) {
         try {
             logger_->flush();
+        } catch (...) {
+            // Ignore
+        }
+    } else if (async_logger_) {
+        try {
+            async_logger_->flush();
+        } catch (...) {
+            // Ignore
+        }
+    }
+
+    // Unregister logger from spdlog registry
+    if (logger_) {
+        try {
+            spdlog::drop("mlogger");
         } catch (...) {
             // Ignore
         }
@@ -241,15 +269,8 @@ void LoggerManager::terminate()
         logger_.reset();
     }
 
-    if (async_mode_) {
-        try {
-            spdlog::shutdown();
-        } catch (...) {
-            // Ignore
-        }
-    }
-
     initialized_ = false;
+    async_mode_  = false;
 }
 
 LoggerManager::~LoggerManager()

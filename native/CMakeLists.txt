@@ -86,3 +86,23 @@ install(TARGETS MLogger
     ARCHIVE DESTINATION lib
     RUNTIME DESTINATION bin
 )
+
+# Test executable
+option(BUILD_TESTS "Build test executable" ON)
+if(BUILD_TESTS)
+    add_executable(test_mlogger tests/test_mlogger.cpp)
+    target_link_libraries(test_mlogger PRIVATE MLogger)
+    target_include_directories(test_mlogger PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    add_executable(test_simple tests/test_simple.cpp)
+    target_link_libraries(test_simple PRIVATE MLogger)
+    target_include_directories(test_simple PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    if(MSVC)
+        target_compile_options(test_mlogger PRIVATE /W4 /permissive-)
+        target_compile_options(test_simple PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(test_mlogger PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(test_simple PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endif()
