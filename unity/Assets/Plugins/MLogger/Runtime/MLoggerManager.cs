@@ -5,24 +5,24 @@ using UnityEngine;
 namespace MLogger
 {
     /// <summary>
-    /// MLogger 管理器，处理初始化和生命周期
+    /// MLogger manager, handles initialization and lifecycle
     /// </summary>
     public static class MLoggerManager
     {
         private static MLoggerHandler _handler;
 
         /// <summary>
-        /// 是否已初始化
+        /// Whether the logger is initialized
         /// </summary>
         public static bool IsInitialized { get; private set; } = false;
 
         /// <summary>
-        /// 当前配置
+        /// Current configuration
         /// </summary>
         public static MLoggerConfig CurrentConfig { get; private set; }
 
         /// <summary>
-        /// 运行时自动初始化（在 Unity 启动时调用）
+        /// Auto-initialize at runtime (called when Unity starts)
         /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AutoInitialize()
@@ -35,10 +35,10 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 使用配置初始化
+        /// Initialize with configuration
         /// </summary>
-        /// <param name="config">配置对象</param>
-        /// <returns>是否成功</returns>
+        /// <param name="config">Configuration object</param>
+        /// <returns>Whether initialization succeeded</returns>
         public static bool Initialize(MLoggerConfig config)
         {
             if (config == null)
@@ -53,7 +53,7 @@ namespace MLogger
                 Shutdown();
             }
 
-            // 确保日志目录存在
+            // Ensure log directory exists
             var logPath = config.logPath;
             if (string.IsNullOrEmpty(logPath))
             {
@@ -74,7 +74,7 @@ namespace MLogger
                 }
             }
 
-            // 调用 Native 初始化
+            // Call Native initialization
             var result = 0;
             try
             {
@@ -110,7 +110,7 @@ namespace MLogger
                 IsInitialized = true;
                 CurrentConfig = config;
 
-                // 替换 Unity 日志处理器
+                // Replace Unity log handler
                 _handler = new MLoggerHandler(config.alsoLogToUnity);
                 Debug.unityLogger.logHandler = _handler;
 
@@ -125,10 +125,10 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 使用默认配置初始化
+        /// Initialize with default configuration
         /// </summary>
-        /// <param name="logPath">日志文件路径（Optional）</param>
-        /// <returns>是否成功</returns>
+        /// <param name="logPath">Log file path (Optional)</param>
+        /// <returns>Whether initialization succeeded</returns>
         public static bool InitializeDefault(string logPath = null)
         {
             var config = MLoggerConfig.CreateDefault();
@@ -141,7 +141,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 获取默认日志路径
+        /// Get default log path
         /// </summary>
         private static string GetDefaultLogPath()
         {
@@ -157,19 +157,19 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 加载配置（从 PlayerPrefs 或默认值）
+        /// Load configuration (from PlayerPrefs or default values)
         /// </summary>
         private static MLoggerConfig LoadConfig()
         {
-            // 可以从 PlayerPrefs 或 ScriptableObject 加载
-            // 这里使用默认配置
+            // Can load from PlayerPrefs or ScriptableObject
+            // Here we use default configuration
             return MLoggerConfig.CreateDefault();
         }
 
         /// <summary>
-        /// 设置日志级别
+        /// Set log level
         /// </summary>
-        /// <param name="level">日志级别</param>
+        /// <param name="level">Log level</param>
         public static void SetLogLevel(LogLevel level)
         {
             if (!IsInitialized)
@@ -186,9 +186,9 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 获取当前日志级别
+        /// Get current log level
         /// </summary>
-        /// <returns>日志级别</returns>
+        /// <returns>Log level</returns>
         public static LogLevel GetLogLevel()
         {
             if (!IsInitialized)
@@ -208,7 +208,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 刷新日志缓冲区
+        /// Flush log buffer
         /// </summary>
         public static void Flush()
         {
@@ -226,7 +226,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 关闭并清理资源
+        /// Shutdown and cleanup resources
         /// </summary>
         public static void Shutdown()
         {
@@ -247,17 +247,17 @@ namespace MLogger
                 IsInitialized = false;
                 CurrentConfig = null;
 
-                // 恢复默认日志处理器
+                // Restore default log handler
                 if (_handler != null)
                 {
-                    // 仍然提示不能，保留原始 logHandler，不再强制重置
+                    // Keep original logHandler, no longer force reset
                     _handler = null;
                 }
             }
         }
 
         /// <summary>
-        /// 应用退出时自动清理
+        /// Auto cleanup when application quits
         /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void OnSubsystemRegistration()
@@ -266,7 +266,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 应用退出 Callback
+        /// Application quit callback
         /// </summary>
         private static void OnApplicationQuitting()
         {

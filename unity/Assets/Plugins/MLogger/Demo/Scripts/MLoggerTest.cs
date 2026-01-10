@@ -3,14 +3,14 @@ using UnityEngine;
 namespace MLogger
 {
     /// <summary>
-    /// MLogger Unity测试
+    /// MLogger Unity test
     /// </summary>
     public class MLoggerTest : MonoBehaviour
     {
-        [Header("Test Settings")] [Tooltip("是否在 Start 时自动运行测试")]
+        [Header("Test Settings")] [Tooltip("Whether to auto-run tests on Start")]
         public bool autoRunOnStart = false;
 
-        [Tooltip("测试日志消息")] public string testMessage = "MLogger Test Message";
+        [Tooltip("Test log message")] public string testMessage = "MLogger Test Message";
 
         private void Start()
         {
@@ -35,7 +35,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 测试初始化状态
+        /// Test initialization status
         /// </summary>
         private void TestInitialization()
         {
@@ -51,7 +51,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 测试各种日志级别
+        /// Test various log levels
         /// </summary>
         private void TestLogLevels()
         {
@@ -65,7 +65,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 测试异常日志
+        /// Test exception logging
         /// </summary>
         private void TestExceptionLogging()
         {
@@ -84,7 +84,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 测试日志级别设置
+        /// Test log level settings
         /// </summary>
         private void TestLogLevelSettings()
         {
@@ -93,21 +93,21 @@ namespace MLogger
             var currentLevel = MLoggerManager.GetLogLevel();
             Debug.Log($"[Test] Current log level: {currentLevel}");
 
-            // 测试设置不同的日志级别
+            // Test setting different log levels
             MLoggerManager.SetLogLevel(LogLevel.Debug);
             Debug.Log($"[Test] Set log level to Debug: {MLoggerManager.GetLogLevel()}");
 
             MLoggerManager.SetLogLevel(LogLevel.Warn);
             Debug.Log($"[Test] Set log level to Warn: {MLoggerManager.GetLogLevel()}");
 
-            // 恢复原级别
+            // Restore original level
             MLoggerManager.SetLogLevel(currentLevel);
 
             Debug.Log("[Test] ✓ Log level settings test complete");
         }
 
         /// <summary>
-        /// 测试刷新功能
+        /// Test flush functionality
         /// </summary>
         private void TestFlush()
         {

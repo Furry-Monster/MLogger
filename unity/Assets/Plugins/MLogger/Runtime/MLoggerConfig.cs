@@ -3,53 +3,53 @@ using System;
 namespace MLogger
 {
     /// <summary>
-    /// MLogger 配置类
+    /// MLogger configuration class
     /// </summary>
     [Serializable]
     public class MLoggerConfig
     {
         /// <summary>
-        /// 日志文件路径
+        /// Log file path
         /// </summary>
         public string logPath = "";
 
         /// <summary>
-        /// 最大文件大小（字节），默认 10MB
+        /// Maximum file size (bytes), default 10MB
         /// </summary>
         public long maxFileSize = 10 * 1024 * 1024;
 
         /// <summary>
-        /// 最大文件数量，默认 5
+        /// Maximum number of files, default 5
         /// </summary>
         public int maxFiles = 5;
 
         /// <summary>
-        /// 是否使用异步模式，默认 true
+        /// Whether to use async mode, default true
         /// </summary>
         public bool asyncMode = true;
 
         /// <summary>
-        /// 线程池大小（异步模式），默认 2
+        /// Thread pool size (async mode), default 2
         /// </summary>
         public int threadPoolSize = 2;
 
         /// <summary>
-        /// 最小日志级别，默认 Info
+        /// Minimum log level, default Info
         /// </summary>
         public LogLevel minLogLevel = LogLevel.Info;
 
         /// <summary>
-        /// 是否自动初始化，默认 true
+        /// Whether to auto-initialize, default true
         /// </summary>
         public bool autoInitialize = true;
 
         /// <summary>
-        /// 是否在 Editor 中也输出到 Unity 控制台，默认 true
+        /// Whether to also output to Unity console in Editor, default true
         /// </summary>
         public bool alsoLogToUnity = true;
 
         /// <summary>
-        /// 创建默认配置
+        /// Create default configuration
         /// </summary>
         public static MLoggerConfig CreateDefault()
         {
@@ -67,7 +67,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// 获取默认日志路径
+        /// Get default log path
         /// </summary>
         private static string GetDefaultLogPath()
         {

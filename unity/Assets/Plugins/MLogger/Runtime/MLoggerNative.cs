@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace MLogger
 {
     /// <summary>
-    /// 日志级别枚举
+    /// Log level enumeration
     /// </summary>
     public enum LogLevel
     {
@@ -17,8 +17,7 @@ namespace MLogger
     }
 
     /// <summary>
-    /// Native 库的 P/Invoke 接口映射
-    /// 映射所有 C 接口函数到 C#
+    /// P/Invoke interface mapping for Native library
     /// </summary>
     internal static class MLoggerNative
     {
@@ -33,21 +32,21 @@ namespace MLogger
 #elif UNITY_STANDALONE_LINUX
         private const string DllName = "mlogger_linux";
 #else
-        private const string DllName = "mlogger_linux"; // 默认
+        private const string DllName = "mlogger_linux"; // Default
 #endif
 
-        #region ========== 初始化函数 ==========
+        #region ========== Initialization Functions ==========
 
         /// <summary>
-        /// 使用自定义配置初始化日志系统
+        /// Initialize log system with custom configuration
         /// </summary>
-        /// <param name="log_path">日志文件路径</param>
-        /// <param name="max_file_size">最大文件大小（字节）</param>
-        /// <param name="max_files">最大文件数量</param>
-        /// <param name="async_mode">是否使用异步模式 (1=异步, 0=同步)</param>
-        /// <param name="thread_pool_size">线程池大小（异步模式）</param>
-        /// <param name="min_log_level">最小日志级别</param>
-        /// <returns>1=成功, 0=失败</returns>
+        /// <param name="log_path">Log file path</param>
+        /// <param name="max_file_size">Maximum file size (bytes)</param>
+        /// <param name="max_files">Maximum number of files</param>
+        /// <param name="async_mode">Whether to use async mode (1=async, 0=sync)</param>
+        /// <param name="thread_pool_size">Thread pool size (async mode)</param>
+        /// <param name="min_log_level">Minimum log level</param>
+        /// <returns>1=success, 0=failure</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern int init(
             [MarshalAs(UnmanagedType.LPStr)] string log_path,
@@ -59,10 +58,10 @@ namespace MLogger
         );
 
         /// <summary>
-        /// 使用默认配置初始化日志系统
+        /// Initialize log system with default configuration
         /// </summary>
-        /// <param name="log_path">日志文件路径</param>
-        /// <returns>1=成功, 0=失败</returns>
+        /// <param name="log_path">Log file path</param>
+        /// <returns>1=success, 0=failure</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern int initDefault(
             [MarshalAs(UnmanagedType.LPStr)] string log_path
@@ -70,13 +69,13 @@ namespace MLogger
 
         #endregion
 
-        #region ========== 日志函数 ==========
+        #region ========== Log Functions ==========
 
         /// <summary>
-        /// 记录日志消息
+        /// Log a message
         /// </summary>
-        /// <param name="log_level">日志级别</param>
-        /// <param name="message">日志消息</param>
+        /// <param name="log_level">Log level</param>
+        /// <param name="message">Log message</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void logMessage(
             int log_level,
@@ -84,11 +83,11 @@ namespace MLogger
         );
 
         /// <summary>
-        /// 记录异常信息
+        /// Log exception information
         /// </summary>
-        /// <param name="exception_type">异常类型</param>
-        /// <param name="message">异常消息</param>
-        /// <param name="stack_trace">堆栈跟踪</param>
+        /// <param name="exception_type">Exception type</param>
+        /// <param name="message">Exception message</param>
+        /// <param name="stack_trace">Stack trace</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern void logException(
             [MarshalAs(UnmanagedType.LPStr)] string exception_type,
@@ -98,37 +97,37 @@ namespace MLogger
 
         #endregion
 
-        #region ========== 控制函数 ==========
+        #region ========== Control Functions ==========
 
         /// <summary>
-        /// 刷新日志缓冲区，确保所有日志写入磁盘
+        /// Flush log buffer, ensure all logs are written to disk
         /// </summary>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void flush();
 
         /// <summary>
-        /// 设置日志级别
+        /// Set log level
         /// </summary>
-        /// <param name="log_level">日志级别</param>
+        /// <param name="log_level">Log level</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void setLogLevel(int log_level);
 
         /// <summary>
-        /// 获取当前日志级别
+        /// Get current log level
         /// </summary>
-        /// <returns>日志级别</returns>
+        /// <returns>Log level</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int getLogLevel();
 
         /// <summary>
-        /// 检查日志系统是否已初始化
+        /// Check if log system is initialized
         /// </summary>
-        /// <returns>1=已初始化, 0=未初始化</returns>
+        /// <returns>1=initialized, 0=not initialized</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int isInit();
 
         /// <summary>
-        /// 终止日志系统并清理资源
+        /// Terminate log system and cleanup resources
         /// </summary>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void terminate();
