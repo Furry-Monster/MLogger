@@ -130,6 +130,15 @@ def configure_cmake(
             stderr=None if verbose else subprocess.STDOUT,
         )
         print(f"✓ [STEP 1/4] CMake configuration completed for {platform}-{arch}")
+        
+        # Copy compile_commands.json to source directory for clangd/IDE support
+        # This helps IDEs find the compilation database for IntelliSense
+        compile_commands_src = build_dir / "compile_commands.json"
+        compile_commands_dst = NATIVE_DIR / "compile_commands.json"
+        if compile_commands_src.exists():
+            shutil.copy2(compile_commands_src, compile_commands_dst)
+            if verbose:
+                print(f"  Copied compile_commands.json to {compile_commands_dst}")
     except subprocess.CalledProcessError:
         print(f"✗ [STEP 1/4] CMake configuration failed for {platform}-{arch}")
         if not verbose:

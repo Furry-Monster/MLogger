@@ -1,0 +1,8 @@
+CompileFlags:
+  Add:
+    - -Isrc
+    - -Iexternal/spdlog/include
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
