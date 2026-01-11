@@ -2,6 +2,10 @@
 
 High-performance Unity logging plugin based on [spdlog](https://github.com/gabime/spdlog), providing cross-platform native logging functionality.
 
+![editor_viewer](docs/editor_viewer.png)
+
+![proj_setting](docs/proj_setting.png)
+
 ## Features
 
 - High Performance - Asynchronous logging system based on spdlog with minimal impact on game performance
