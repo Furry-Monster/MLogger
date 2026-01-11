@@ -261,7 +261,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   autoRunOnStart: 1
-  testMessage: MLogger Test Message
+  testMessage: RuntimeTestMsg
 --- !u!1 &1119640409
 GameObject:
   m_ObjectHideFlags: 0

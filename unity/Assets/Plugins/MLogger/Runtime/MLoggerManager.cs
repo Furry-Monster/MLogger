@@ -157,12 +157,26 @@ namespace MLogger
         }
 
         /// <summary>
-        /// Load configuration (from PlayerPrefs or default values)
+        /// Load configuration (from ScriptableObject or default values)
         /// </summary>
         private static MLoggerConfig LoadConfig()
         {
-            // Can load from PlayerPrefs or ScriptableObject
-            // Here we use default configuration
+            var settings = MLoggerSettings.Instance;
+            if (settings != null && settings.Config != null)
+            {
+                return new MLoggerConfig
+                {
+                    logPath = settings.Config.logPath,
+                    maxFileSize = settings.Config.maxFileSize,
+                    maxFiles = settings.Config.maxFiles,
+                    asyncMode = settings.Config.asyncMode,
+                    threadPoolSize = settings.Config.threadPoolSize,
+                    minLogLevel = settings.Config.minLogLevel,
+                    autoInitialize = settings.Config.autoInitialize,
+                    alsoLogToUnity = settings.Config.alsoLogToUnity
+                };
+            }
+
             return MLoggerConfig.CreateDefault();
         }
 
