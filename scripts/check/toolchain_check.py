@@ -15,7 +15,7 @@ class ToolchainChecker:
         self.warnings: List[str] = []
         self.info: List[str] = []
 
-    def check_command(
+    def _check_command(
         self, command: List[str], timeout: int = 5
     ) -> Tuple[bool, Optional[str]]:
         try:
@@ -30,8 +30,12 @@ class ToolchainChecker:
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False, None
 
+    def _extract_version(self, text: str, pattern: str) -> Optional[str]:
+        match = re.search(pattern, text, re.IGNORECASE)
+        return match.group(1) if match else None
+
     def check_cmake(self) -> bool:
-        available, output = self.check_command(["cmake", "--version"])
+        available, output = self._check_command(["cmake", "--version"])
         if not available:
             self.errors.append("CMake not found. Install CMake 3.20 or later.")
             return False
@@ -51,22 +55,17 @@ class ToolchainChecker:
         return True
 
     def check_cmake_generators(self) -> bool:
-        available, output = self.check_command(["cmake", "-G"])
+        available, output = self._check_command(["cmake", "-G"])
         if not available:
             self.warnings.append("Could not list CMake generators")
             return False
-        vs_generators = [
+        lines = [
             line.strip()
             for line in output.split("\n")
-            if line.strip() and not line.startswith("*") and "Visual Studio" in line
+            if line.strip() and not line.startswith("*")
         ]
-        mingw_generators = [
-            line.strip()
-            for line in output.split("\n")
-            if line.strip()
-            and not line.startswith("*")
-            and ("MinGW" in line or "Ninja" in line)
-        ]
+        vs_generators = [line for line in lines if "Visual Studio" in line]
+        mingw_generators = [line for line in lines if "MinGW" in line or "Ninja" in line]
         if vs_generators:
             self.info.append(f"Visual Studio generators: {', '.join(vs_generators)}")
         if mingw_generators:
@@ -78,25 +77,23 @@ class ToolchainChecker:
     def check_c_compiler(self) -> bool:
         system = platform.system()
         if system == "Windows":
-            if self.check_command(["cl"], timeout=2)[0]:
+            if self._check_command(["cl"], timeout=2)[0]:
                 self.info.append("MSVC compiler found")
                 return True
-            available, output = self.check_command(["gcc", "--version"])
+            available, output = self._check_command(["gcc", "--version"])
             if available:
-                version = re.search(r"gcc.*?(\d+\.\d+)", output)
+                version = self._extract_version(output, r"gcc.*?(\d+\.\d+)")
                 self.info.append(
-                    f"MinGW GCC found: {version.group(1) if version else 'unknown'}"
+                    f"MinGW GCC found: {version if version else 'unknown'}"
                 )
                 return True
             self.errors.append("No C compiler found (MSVC or MinGW GCC)")
             return False
         elif system in ("Linux", "Darwin"):
-            available, output = self.check_command(["gcc", "--version"])
+            available, output = self._check_command(["gcc", "--version"])
             if available:
-                version = re.search(r"gcc.*?(\d+\.\d+)", output)
-                self.info.append(
-                    f"GCC found: {version.group(1) if version else 'unknown'}"
-                )
+                version = self._extract_version(output, r"gcc.*?(\d+\.\d+)")
+                self.info.append(f"GCC found: {version if version else 'unknown'}")
                 return True
             self.errors.append("GCC not found")
             return False
@@ -105,26 +102,24 @@ class ToolchainChecker:
     def check_cxx_compiler(self) -> bool:
         system = platform.system()
         if system == "Windows":
-            if self.check_command(["cl"], timeout=2)[0]:
+            if self._check_command(["cl"], timeout=2)[0]:
                 return True
-            available, output = self.check_command(["g++", "--version"])
+            available, output = self._check_command(["g++", "--version"])
             if available:
-                version = re.search(r"g\+\+.*?(\d+\.\d+)", output)
+                version = self._extract_version(output, r"g\+\+.*?(\d+\.\d+)")
                 self.info.append(
-                    f"MinGW G++ found: {version.group(1) if version else 'unknown'}"
+                    f"MinGW G++ found: {version if version else 'unknown'}"
                 )
                 return True
             self.errors.append("No C++ compiler found (MSVC or MinGW G++)")
             return False
         elif system in ("Linux", "Darwin"):
-            available, output = self.check_command(["g++", "--version"])
+            available, output = self._check_command(["g++", "--version"])
             if available:
-                version = re.search(r"g\+\+.*?(\d+\.\d+)", output)
-                self.info.append(
-                    f"G++ found: {version.group(1) if version else 'unknown'}"
-                )
+                version = self._extract_version(output, r"g\+\+.*?(\d+\.\d+)")
+                self.info.append(f"G++ found: {version if version else 'unknown'}")
                 return True
-            if self.check_command(["clang++", "--version"])[0]:
+            if self._check_command(["clang++", "--version"])[0]:
                 self.info.append("Clang++ found")
                 return True
             self.errors.append("G++ or Clang++ not found")
@@ -148,11 +143,12 @@ class ToolchainChecker:
     def check_mingw(self) -> bool:
         if platform.system() != "Windows":
             return True
-        available, output = self.check_command(["gcc", "--version"])
+        available, output = self._check_command(["gcc", "--version"])
         if available and ("mingw" in output.lower() or "msys" in output.lower()):
             self.info.append("MinGW/MSYS found in PATH")
             return True
-        for msys_path in [Path("C:/msys64"), Path("C:/msys32"), Path("C:/msys2")]:
+        msys_paths = [Path("C:/msys64"), Path("C:/msys32"), Path("C:/msys2")]
+        for msys_path in msys_paths:
             if msys_path.exists():
                 self.info.append(f"MSYS found at: {msys_path}")
                 return True
@@ -212,7 +208,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Build Toolchain Check")
     parser.add_argument("--verbose", "-v", action="store_true")
-    args = parser.parse_args()
+    parser.parse_args()
 
     checker = ToolchainChecker()
     success, errors, warnings, info = checker.run_all_checks()

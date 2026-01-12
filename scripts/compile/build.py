@@ -56,6 +56,15 @@ PLATFORM_BUILDERS = {
     "ios": IOSBuilder,
 }
 
+SEPARATOR = "=" * 60
+BASIC_TESTS = ["test_mlogger", "test_simple", "test_c_interface"]
+ENHANCED_TESTS = [
+    "test_boundary",
+    "test_error_handling",
+    "test_stress",
+    "test_memory",
+]
+
 
 def get_current_platform() -> str:
     platform = sys.platform
@@ -136,7 +145,6 @@ def check_and_clean_cmake_cache(
     build_dir: Path, current_generator: str, verbose: bool = False
 ) -> bool:
     cmake_cache = build_dir / "CMakeCache.txt"
-    cmake_files_dir = build_dir / "CMakeFiles"
     if not cmake_cache.exists():
         return False
 
@@ -151,27 +159,37 @@ def check_and_clean_cmake_cache(
             print(f"  [WARN] Could not read CMakeCache.txt: {e}")
 
     if cached_generator is None or cached_generator != current_generator:
-        if verbose and cached_generator:
-            print(
-                f"  [INFO] Generator mismatch: {cached_generator} -> {current_generator}"
-            )
-            print(f"  [INFO] Cleaning CMake cache...")
-        elif verbose:
-            print(f"  [INFO] Cleaning CMake cache...")
-
-        cache_removed = _remove_file_with_retry(
-            cmake_cache, max_retries=3, retry_delay=0.5
-        )
-        dir_removed = _remove_directory_with_retry(
-            cmake_files_dir, max_retries=3, retry_delay=0.5
-        )
-
-        if verbose and not (cache_removed and dir_removed):
-            print(f"  [WARN] Some cache files could not be removed (may be locked)")
-            print(f"    CMakeCache.txt removed: {cache_removed}")
-            print(f"    CMakeFiles directory removed: {dir_removed}")
+        if verbose:
+            if cached_generator:
+                print(
+                    f"  [INFO] Generator mismatch: {cached_generator} -> {current_generator}"
+                )
+            print("  [INFO] Cleaning CMake cache...")
+        _clean_cmake_cache_files(build_dir, verbose)
         return True
     return False
+
+
+def _print_section(title: str):
+    print(f"\n{SEPARATOR}")
+    print(title)
+    print(SEPARATOR)
+
+
+def _clean_cmake_cache_files(
+    build_dir: Path, verbose: bool = False
+) -> tuple[bool, bool]:
+    cmake_cache = build_dir / "CMakeCache.txt"
+    cmake_files_dir = build_dir / "CMakeFiles"
+    cache_removed = _remove_file_with_retry(cmake_cache, max_retries=3, retry_delay=0.5)
+    dir_removed = _remove_directory_with_retry(
+        cmake_files_dir, max_retries=3, retry_delay=0.5
+    )
+    if verbose and not (cache_removed and dir_removed):
+        print("  [WARN] Some cache files could not be removed")
+        print(f"    CMakeCache.txt removed: {cache_removed}")
+        print(f"    CMakeFiles directory removed: {dir_removed}")
+    return cache_removed, dir_removed
 
 
 def configure_cmake(
@@ -182,9 +200,7 @@ def configure_cmake(
     clean: bool = False,
     **kwargs,
 ):
-    print(f"\n{'=' * 60}")
-    print(f"[STEP 1/4] CONFIGURE - Configuring CMake for {platform}-{arch}")
-    print(f"{'=' * 60}")
+    _print_section(f"[STEP 1/4] CONFIGURE - Configuring CMake for {platform}-{arch}")
 
     build_dir = builder.build_dir
     build_dir.mkdir(parents=True, exist_ok=True)
@@ -203,16 +219,7 @@ def configure_cmake(
             if cmake_cache.exists() or cmake_files_dir.exists():
                 if verbose:
                     print("  [INFO] Force cleaning CMake cache...")
-                cache_removed = _remove_file_with_retry(
-                    cmake_cache, max_retries=3, retry_delay=0.5
-                )
-                dir_removed = _remove_directory_with_retry(
-                    cmake_files_dir, max_retries=3, retry_delay=0.5
-                )
-                if verbose and not (cache_removed and dir_removed):
-                    print(f"  [WARN] Some cache files could not be removed")
-                    print(f"    CMakeCache.txt removed: {cache_removed}")
-                    print(f"    CMakeFiles directory removed: {dir_removed}")
+                _clean_cmake_cache_files(build_dir, verbose)
         else:
             check_and_clean_cmake_cache(build_dir, current_generator, verbose)
 
@@ -253,9 +260,7 @@ def configure_cmake(
 def build_project(
     platform: str, arch: str, builder: "PlatformBuilder", verbose: bool = False
 ):
-    print(f"\n{'=' * 60}")
-    print(f"[STEP 2/4] BUILD - Building for {platform}-{arch}")
-    print(f"{'=' * 60}")
+    _print_section(f"[STEP 2/4] BUILD - Building for {platform}-{arch}")
 
     build_dir = builder.build_dir
     if not build_dir.exists():
@@ -285,45 +290,88 @@ def build_project(
 
 
 def run_tests(
-    platform: str, arch: str, builder: "PlatformBuilder", verbose: bool = False
+    platform: str,
+    arch: str,
+    builder: "PlatformBuilder",
+    verbose: bool = False,
+    test_filter: str = None,
 ):
     if not builder.can_run_tests():
-        print(f"\n{'=' * 60}")
-        print(
+        _print_section(
             f"[STEP 3/4] TEST - Skipping tests for {platform} (cannot run executables)"
         )
-        print(f"{'=' * 60}")
         return
 
-    print(f"\n{'=' * 60}")
-    print(f"[STEP 3/4] TEST - Running tests for {platform}-{arch}")
-    print(f"{'=' * 60}")
+    title = f"[STEP 3/4] TEST - Running tests for {platform}-{arch}"
+    if test_filter:
+        title += f"\n  Filter: {test_filter}"
+    _print_section(title)
 
     build_dir = builder.build_dir
     bin_dir = build_dir / "bin"
     test_executables = builder.get_test_executables()
     exe_ext = builder.get_executable_extension()
 
+    if test_filter:
+        test_executables = [
+            t for t in test_executables if test_filter.lower() in t.lower()
+        ]
+        if not test_executables:
+            print(f"  [WARN] No tests match filter: {test_filter}")
+            return
+
+    test_categories = {
+        "Basic Tests": [t for t in test_executables if t in BASIC_TESTS],
+        "Enhanced Tests": [t for t in test_executables if t in ENHANCED_TESTS],
+    }
+
     all_passed = True
-    for test_name in test_executables:
-        test_path = bin_dir / f"{test_name}{exe_ext}"
-        if not test_path.exists():
-            print(f"  [WARN] Test executable not found: {test_path}")
+    total_tests = 0
+    passed_tests = 0
+
+    for category, tests in test_categories.items():
+        if not tests:
             continue
 
-        try:
-            print(f"  Running {test_name}...")
-            subprocess.run(
-                [str(test_path)],
-                check=True,
-                cwd=bin_dir,
-                stdout=None if verbose else subprocess.DEVNULL,
-                stderr=None if verbose else subprocess.STDOUT,
-            )
-            print(f"  [PASS] {test_name} passed")
-        except subprocess.CalledProcessError:
-            print(f"  [FAIL] {test_name} failed")
-            all_passed = False
+        print(f"\n  [{category}]")
+        for test_name in tests:
+            test_path = bin_dir / f"{test_name}{exe_ext}"
+            if not test_path.exists():
+                print(f"    [WARN] Test executable not found: {test_name}")
+                continue
+
+            total_tests += 1
+            try:
+                print(f"    Running {test_name}...", end=" ", flush=True)
+                result = subprocess.run(
+                    [str(test_path)],
+                    check=True,
+                    cwd=bin_dir,
+                    capture_output=True,
+                    text=True,
+                )
+                print("[PASS]")
+                passed_tests += 1
+                if verbose:
+                    if result.stdout:
+                        for line in result.stdout.splitlines():
+                            print(f"      {line}")
+                    if result.stderr:
+                        for line in result.stderr.splitlines():
+                            print(f"      [STDERR] {line}")
+            except subprocess.CalledProcessError as e:
+                print("[FAIL]")
+                all_passed = False
+                if e.stdout:
+                    for line in e.stdout.splitlines():
+                        print(f"      {line}")
+                if e.stderr:
+                    for line in e.stderr.splitlines():
+                        print(f"      [STDERR] {line}")
+                if not verbose:
+                    print("      Run with --verbose to see full test output")
+
+    print(f"\n  Test Summary: {passed_tests}/{total_tests} passed")
 
     if not all_passed:
         raise RuntimeError(f"Some tests failed for {platform}-{arch}")
@@ -331,15 +379,9 @@ def run_tests(
     print(f"[PASS] [STEP 3/4] All tests passed for {platform}-{arch}")
 
 
-def copy_library_to_unity(
-    platform: str, arch: str, builder: "PlatformBuilder", verbose: bool = False
-):
-    print(f"\n{'=' * 60}")
-    print("[STEP 4/4] COPY - Copying library to Unity directory")
-    print(f"{'=' * 60}")
-
-    build_dir = builder.build_dir
-    library_name = LIBRARY_NAMES[platform]
+def _find_library_path(
+    build_dir: Path, library_name: str, platform: str, builder: "PlatformBuilder"
+) -> Path:
     lib_dir = build_dir / "bin" if platform == "windows" else build_dir / "lib"
     source_path = builder.get_library_path(lib_dir, library_name)
 
@@ -347,18 +389,23 @@ def copy_library_to_unity(
         alt_paths = [build_dir / "bin" / library_name, build_dir / "lib" / library_name]
         for alt_path in alt_paths:
             if alt_path.exists():
-                source_path = alt_path
-                if verbose:
-                    print(
-                        f"  [INFO] Found library at alternative location: {source_path}"
-                    )
-                break
-        else:
-            raise FileNotFoundError(
-                f"Library file not found: {source_path}\n"
-                f"  Searched in: {lib_dir}\n"
-                f"  Also tried: {[str(p) for p in alt_paths]}"
-            )
+                return alt_path
+        raise FileNotFoundError(
+            f"Library file not found: {source_path}\n"
+            f"  Searched in: {lib_dir}\n"
+            f"  Also tried: {[str(p) for p in alt_paths]}"
+        )
+    return source_path
+
+
+def copy_library_to_unity(
+    platform: str, arch: str, builder: "PlatformBuilder", verbose: bool = False
+):
+    _print_section("[STEP 4/4] COPY - Copying library to Unity directory")
+
+    build_dir = builder.build_dir
+    library_name = LIBRARY_NAMES[platform]
+    source_path = _find_library_path(build_dir, library_name, platform, builder)
 
     unity_platform_dir = PLATFORM_UNITY_MAP[platform]
     unity_arch_dir = ARCH_UNITY_MAP[arch]
@@ -367,21 +414,10 @@ def copy_library_to_unity(
     target_path = unity_target_dir / library_name
 
     if verbose:
-        print(f"Source: {source_path}")
-        print(f"Target: {target_path}")
+        print(f"  Copying from: {source_path}")
+        print(f"  Copying to: {target_path}")
 
     try:
-        if platform == "windows" and not source_path.exists():
-            alt_source_path = build_dir / "bin" / library_name
-            if alt_source_path.exists():
-                source_path = alt_source_path
-                if verbose:
-                    print(f"  [INFO] Found library in bin directory: {source_path}")
-
-        if verbose:
-            print(f"  Copying from: {source_path}")
-            print(f"  Copying to: {target_path}")
-
         shutil.copy(source_path, target_path)
         print(f"[PASS] [STEP 4/4] Copied {library_name} to {unity_target_dir}")
     except Exception as e:
@@ -411,6 +447,11 @@ def main():
     )
     parser.add_argument("--skip-tests", action="store_true", help="Skip running tests")
     parser.add_argument(
+        "--test-filter",
+        type=str,
+        help="Run only tests matching the filter string (case-insensitive)",
+    )
+    parser.add_argument(
         "--skip-copy", action="store_true", help="Skip copying to Unity"
     )
     parser.add_argument("--generator", type=str, help="CMake generator (Windows only)")
@@ -432,14 +473,14 @@ def main():
 
     args = parser.parse_args()
 
-    print("\n" + "=" * 60)
+    print(f"\n{SEPARATOR}")
     print("MLogger Native Library Build Script")
-    print("=" * 60)
+    print(SEPARATOR)
     print(f"Platform: {args.platform}")
     print(f"Architecture: {args.arch}")
     if args.verbose:
         print("Verbose mode: ON")
-    print("=" * 60)
+    print(SEPARATOR)
 
     builder = get_builder(args.platform, args.arch)
 
@@ -460,26 +501,25 @@ def main():
         build_project(args.platform, args.arch, builder, args.verbose)
 
         if not args.skip_tests:
-            run_tests(args.platform, args.arch, builder, args.verbose)
+            run_tests(
+                args.platform,
+                args.arch,
+                builder,
+                args.verbose,
+                test_filter=args.test_filter,
+            )
         else:
-            print(f"\n{'=' * 60}")
-            print("[SKIP] Tests skipped")
-            print(f"{'=' * 60}")
+            _print_section("[SKIP] Tests skipped")
 
         if not args.skip_copy:
             copy_library_to_unity(args.platform, args.arch, builder, args.verbose)
         else:
-            print(f"\n{'=' * 60}")
-            print("[SKIP] Copy to Unity skipped")
-            print(f"{'=' * 60}")
+            _print_section("[SKIP] Copy to Unity skipped")
 
-        print(f"\n{'=' * 60}")
-        print("[PASS] BUILD COMPLETED SUCCESSFULLY!")
-        print(f"{'=' * 60}\n")
+        _print_section("[PASS] BUILD COMPLETED SUCCESSFULLY!")
+        print()
     except Exception as e:
-        print(f"\n{'=' * 60}")
-        print("[FAIL] Build failed!")
-        print(f"{'=' * 60}")
+        _print_section("[FAIL] Build failed!")
         print(f"Error: {e}")
         sys.exit(1)
 

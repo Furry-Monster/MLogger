@@ -40,11 +40,6 @@ class IOSBuilder(PlatformBuilder):
                 args.append(f"-DCMAKE_OSX_SYSROOT={ios_sdk}")
         return args
 
-    def get_build_args(self) -> List[str]:
-        import os
-
-        return ["-j", os.environ.get("JOBS", "4")]
-
     def can_run_tests(self) -> bool:
         return False
 

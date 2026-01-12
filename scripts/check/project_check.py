@@ -146,7 +146,7 @@ def main():
         print(f"  [WARN] {warning}")
 
     status = "[PASS]" if success else "[FAIL]"
-    print(f"{status} Project integrity check {'passed' if success else 'failed'}")
+    print(f"\n{status} Project integrity check {'passed' if success else 'failed'}")
     return 0 if success else 1
 
 

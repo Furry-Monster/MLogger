@@ -14,7 +14,7 @@ class CrossCompileChecker:
         self.warnings: List[str] = []
         self.info: List[str] = []
 
-    def check_command(self, command: List[str], timeout: int = 5) -> bool:
+    def _check_command(self, command: List[str], timeout: int = 5) -> bool:
         try:
             result = subprocess.run(
                 command, capture_output=True, text=True, timeout=timeout
@@ -57,10 +57,10 @@ class CrossCompileChecker:
     def check_ios_toolchain(self) -> bool:
         if platform.system() != "Darwin":
             return True
-        if not self.check_command(["xcodebuild", "-version"]):
+        if not self._check_command(["xcodebuild", "-version"]):
             self.warnings.append("Xcode not found (required for iOS builds)")
             return False
-        if not self.check_command(["xcrun", "--find", "clang"]):
+        if not self._check_command(["xcrun", "--find", "clang"]):
             self.warnings.append("Xcode Command Line Tools not found")
             return False
         self.info.append("iOS toolchain available")
@@ -75,7 +75,7 @@ class CrossCompileChecker:
             "arm-linux-gnueabihf-gcc",
         ]
         for tc in toolchains:
-            if self.check_command([tc, "--version"]):
+            if self._check_command([tc, "--version"]):
                 self.info.append(f"Linux cross-compiler found: {tc}")
                 return True
         self.warnings.append("Linux cross-compilation toolchain not found")
@@ -84,17 +84,12 @@ class CrossCompileChecker:
     def check_windows_cross_compile(self) -> bool:
         if platform.system() == "Windows":
             return True
-        for cmd, desc in [
-            (
-                ["x86_64-w64-mingw32-gcc", "--version"],
-                "MinGW cross-compiler found for Windows",
-            ),
-            (
-                ["i686-w64-mingw32-gcc", "--version"],
-                "MinGW cross-compiler found for Windows (32-bit)",
-            ),
-        ]:
-            if self.check_command(cmd):
+        cross_compilers = [
+            (["x86_64-w64-mingw32-gcc", "--version"], "MinGW cross-compiler found for Windows"),
+            (["i686-w64-mingw32-gcc", "--version"], "MinGW cross-compiler found for Windows (32-bit)"),
+        ]
+        for cmd, desc in cross_compilers:
+            if self._check_command(cmd):
                 self.info.append(desc)
                 return True
         self.warnings.append("Windows cross-compilation toolchain not found")

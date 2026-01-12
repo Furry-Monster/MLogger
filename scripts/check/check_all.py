@@ -10,11 +10,15 @@ from check.cross_compile_check import CrossCompileChecker
 from check.project_check import ProjectChecker
 from check.toolchain_check import ToolchainChecker
 
+SEPARATOR = "=" * 60
+
+
+def _print_section(title: str):
+    print(f"{SEPARATOR}\n{title}\n{SEPARATOR}")
+
 
 def print_results(title, success, errors, warnings, info=None):
-    print("=" * 60)
-    print(title)
-    print("=" * 60)
+    _print_section(title)
     if info:
         for msg in info:
             print(f"  [INFO] {msg}")
@@ -58,7 +62,7 @@ def main():
         "Cross-Compilation Check", success, errors, warnings, info
     )
 
-    print("=" * 60)
+    _print_section("")
     status = "[PASS]" if all_passed else "[FAIL]"
     print(f"{status} All checks {'passed' if all_passed else 'failed'}")
     return 0 if all_passed else 1

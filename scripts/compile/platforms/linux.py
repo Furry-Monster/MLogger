@@ -23,8 +23,3 @@ class LinuxBuilder(PlatformBuilder):
                     UserWarning,
                 )
         return args
-
-    def get_build_args(self) -> List[str]:
-        import os
-
-        return ["-j", os.environ.get("JOBS", "4")]

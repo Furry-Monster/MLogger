@@ -24,8 +24,3 @@ class MacOSBuilder(PlatformBuilder):
             elif self.arch == "x86_64":
                 args.append("-DCMAKE_OSX_ARCHITECTURES=x86_64")
         return args
-
-    def get_build_args(self) -> List[str]:
-        import os
-
-        return ["-j", os.environ.get("JOBS", "4")]

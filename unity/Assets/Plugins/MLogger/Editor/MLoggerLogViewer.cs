@@ -38,6 +38,7 @@ namespace MLogger.Editor
         private string cachedFilteredContent = "";
         private string lastSearchText = "";
         private bool lastUseRegex = false;
+
         private Dictionary<LogLevel, bool> lastLevelFilters = new()
         {
             { LogLevel.Trace, true },
@@ -47,6 +48,7 @@ namespace MLogger.Editor
             { LogLevel.Error, true },
             { LogLevel.Critical, true }
         };
+
         private bool filtersChanged = true;
         private const int maxDisplayLines = 10000;
         private bool isLoading = false;
@@ -265,7 +267,8 @@ namespace MLogger.Editor
 
                 if (filteredLines.Length > maxDisplayLines)
                 {
-                    cachedFilteredContent = $"[Showing last {maxDisplayLines} of {filteredLines.Length} lines]\n" + cachedFilteredContent;
+                    cachedFilteredContent = $"[Showing last {maxDisplayLines} of {filteredLines.Length} lines]\n" +
+                                            cachedFilteredContent;
                 }
 
                 Repaint();
@@ -437,7 +440,8 @@ namespace MLogger.Editor
                     }
                     else
                     {
-                        logContent = $"Log file not found: {logPath}\n\nMake sure MLogger is initialized and has written logs.";
+                        logContent =
+                            $"Log file not found: {logPath}\n\nMake sure MLogger is initialized and has written logs.";
                         logLines = Array.Empty<string>();
                         statistics.Reset();
                         currentFileSize = 0;
@@ -472,6 +476,7 @@ namespace MLogger.Editor
                 {
                     lines.RemoveAt(0);
                 }
+
                 lines.Add(line);
             }
 

@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List
@@ -14,12 +15,21 @@ class PlatformBuilder(ABC):
     def get_cmake_args(self, **kwargs) -> List[str]:
         pass
 
-    @abstractmethod
     def get_build_args(self) -> List[str]:
-        pass
+        return ["-j", os.environ.get("JOBS", "4")]
 
     def get_test_executables(self) -> List[str]:
-        return ["test_mlogger", "test_simple", "test_c_interface"]
+        return [
+            # Basic tests
+            "test_mlogger",
+            "test_simple",
+            "test_c_interface",
+            # Enhanced tests
+            "test_boundary",
+            "test_error_handling",
+            "test_stress",
+            "test_memory",
+        ]
 
     def get_executable_extension(self) -> str:
         return ""

@@ -132,13 +132,53 @@ if(BUILD_TESTS)
         )
     endif()
 
+    # Enhanced tests
+    add_executable(test_boundary tests/test_boundary.cpp)
+    target_link_libraries(test_boundary PRIVATE MLogger)
+    target_include_directories(test_boundary PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    add_executable(test_error_handling tests/test_error_handling.cpp)
+    target_link_libraries(test_error_handling PRIVATE MLogger)
+    target_include_directories(test_error_handling PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    add_executable(test_stress tests/test_stress.cpp)
+    target_link_libraries(test_stress PRIVATE MLogger)
+    target_include_directories(test_stress PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    add_executable(test_memory tests/test_memory.cpp)
+    target_link_libraries(test_memory PRIVATE MLogger)
+    target_include_directories(test_memory PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    if(WIN32 AND NOT MSVC)
+        set_target_properties(test_boundary PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        set_target_properties(test_error_handling PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        set_target_properties(test_stress PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+        set_target_properties(test_memory PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+    endif()
+
     if(MSVC)
         target_compile_options(test_mlogger PRIVATE /W4 /permissive-)
         target_compile_options(test_simple PRIVATE /W4 /permissive-)
         target_compile_options(test_c_interface PRIVATE /W4)
+        target_compile_options(test_boundary PRIVATE /W4 /permissive-)
+        target_compile_options(test_error_handling PRIVATE /W4 /permissive-)
+        target_compile_options(test_stress PRIVATE /W4 /permissive-)
+        target_compile_options(test_memory PRIVATE /W4 /permissive-)
     else()
         target_compile_options(test_mlogger PRIVATE -Wall -Wextra -Wpedantic)
         target_compile_options(test_simple PRIVATE -Wall -Wextra -Wpedantic)
         target_compile_options(test_c_interface PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(test_boundary PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(test_error_handling PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(test_stress PRIVATE -Wall -Wextra -Wpedantic)
+        target_compile_options(test_memory PRIVATE -Wall -Wextra -Wpedantic)
     endif()
 endif()

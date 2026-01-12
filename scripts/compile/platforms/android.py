@@ -21,8 +21,3 @@ class AndroidBuilder(PlatformBuilder):
         args.append(f"-DANDROID_ABI={abi}")
         args.append("-DANDROID_PLATFORM=android-21")
         return args
-
-    def get_build_args(self) -> List[str]:
-        import os
-
-        return ["-j", os.environ.get("JOBS", "4")]
