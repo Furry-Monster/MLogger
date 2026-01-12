@@ -30,32 +30,13 @@ set(MLOGGER_SOURCES
     src/utils/str_utils.h
 )
 
-if(WIN32)
-    list(APPEND MLOGGER_SOURCES
-        src/bridge/plateform/bridge_win.cpp
-        src/bridge/plateform/bridge_win.h
-    )
-elseif(ANDROID)
-    list(APPEND MLOGGER_SOURCES
-        src/bridge/plateform/bridge_android.cpp
-        src/bridge/plateform/bridge_android.h
-    )
-elseif(IOS)
-    list(APPEND MLOGGER_SOURCES
-        src/bridge/plateform/bridge_ios.cpp
-        src/bridge/plateform/bridge_ios.h
-    )
-elseif(APPLE)
-    list(APPEND MLOGGER_SOURCES
-        src/bridge/plateform/bridge_macos.cpp
-        src/bridge/plateform/bridge_macos.h
-    )
-else()
-    list(APPEND MLOGGER_SOURCES
-        src/bridge/plateform/bridge_linux.cpp
-        src/bridge/plateform/bridge_linux.h
-    )
-endif()
+# Platform-specific bridge files (optional, add if needed in the future)
+# if(WIN32)
+#     list(APPEND MLOGGER_SOURCES
+#         src/bridge/plateform/bridge_win.cpp
+#         src/bridge/plateform/bridge_win.h
+#     )
+# endif()
 
 if(WIN32)
     add_library(MLogger SHARED ${MLOGGER_SOURCES})

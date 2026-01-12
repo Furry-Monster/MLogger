@@ -1,5 +1,7 @@
 #include "logger_manager.h"
 #include "core/logger_config.h"
+#include "utils/path_utils.h"
+#include "utils/str_utils.h"
 #include <filesystem>
 #include <iostream>
 #include <mutex>
@@ -32,13 +34,8 @@ bool LoggerManager::initialize(const LoggerConfig& config)
 
     try {
         // prepare directory
-        std::filesystem::path log_path(config.log_path);
-        std::filesystem::path log_dir = log_path.parent_path();
-        if (!log_dir.empty() && log_dir != ".") {
-            if (!std::filesystem::exists(log_dir) &&
-                !std::filesystem::create_directories(log_dir)) {
-                throw std::runtime_error("Failed to create log directory");
-            }
+        if (!utils::ensureDirectoryExists(config.log_path)) {
+            throw std::runtime_error("Failed to create log directory");
         }
 
         // prepare configs
@@ -149,21 +146,8 @@ void LoggerManager::logException(const char* exception_type, const char* message
     }
 
     try {
-        std::string full_message = "[EXCEPTION] ";
-        if (exception_type) {
-            full_message += exception_type;
-            full_message += ": ";
-        }
-
-        if (message) {
-            full_message += message;
-        }
-
-        if (stack_trace) {
-            full_message += "\n";
-            full_message += stack_trace;
-        }
-
+        std::string full_message =
+            utils::formatExceptionMessage(exception_type, message, stack_trace);
         logger_->error(full_message);
     } catch (const std::exception& e) {
         reportError("logException", e.what());
