@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import os
+from pathlib import Path
 import platform
 import subprocess
 import sys
-from pathlib import Path
 from typing import List, Optional, Tuple
 
 
@@ -16,17 +16,13 @@ class CrossCompileChecker:
 
     def _check_command(self, command: List[str], timeout: int = 5) -> bool:
         try:
-            result = subprocess.run(
-                command, capture_output=True, text=True, timeout=timeout
-            )
+            result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
             return result.returncode == 0
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False
 
     def check_android_ndk(self) -> bool:
-        ndk_home = os.environ.get("ANDROID_NDK_HOME") or os.environ.get(
-            "ANDROID_NDK_ROOT"
-        )
+        ndk_home = os.environ.get("ANDROID_NDK_HOME") or os.environ.get("ANDROID_NDK_ROOT")
         paths = (
             [Path(ndk_home)]
             if ndk_home
@@ -39,9 +35,7 @@ class CrossCompileChecker:
 
         for ndk_path in paths:
             if ndk_path.exists():
-                toolchain_file = (
-                    ndk_path / "build" / "cmake" / "android.toolchain.cmake"
-                )
+                toolchain_file = ndk_path / "build" / "cmake" / "android.toolchain.cmake"
                 if toolchain_file.exists():
                     self.info.append(f"Android NDK found: {ndk_path}")
                     return True
@@ -49,9 +43,7 @@ class CrossCompileChecker:
                     f"Android NDK found but toolchain file missing: {toolchain_file}"
                 )
 
-        self.warnings.append(
-            "Android NDK not found. Set ANDROID_NDK_HOME environment variable."
-        )
+        self.warnings.append("Android NDK not found. Set ANDROID_NDK_HOME environment variable.")
         return False
 
     def check_ios_toolchain(self) -> bool:
@@ -86,7 +78,10 @@ class CrossCompileChecker:
             return True
         cross_compilers = [
             (["x86_64-w64-mingw32-gcc", "--version"], "MinGW cross-compiler found for Windows"),
-            (["i686-w64-mingw32-gcc", "--version"], "MinGW cross-compiler found for Windows (32-bit)"),
+            (
+                ["i686-w64-mingw32-gcc", "--version"],
+                "MinGW cross-compiler found for Windows (32-bit)",
+            ),
         ]
         for cmd, desc in cross_compilers:
             if self._check_command(cmd):

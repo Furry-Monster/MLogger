@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import sys
 from pathlib import Path
+import sys
 
 scripts_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(scripts_dir))
@@ -37,9 +37,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Run All Checks")
-    parser.add_argument(
-        "--project-root", type=Path, default=Path(__file__).parent.parent.parent
-    )
+    parser.add_argument("--project-root", type=Path, default=Path(__file__).parent.parent.parent)
     parser.add_argument(
         "--platform", type=str, choices=["linux", "windows", "macos", "android", "ios"]
     )
@@ -58,9 +56,7 @@ def main():
 
     cross_checker = CrossCompileChecker()
     success, errors, warnings, info = cross_checker.run_all_checks(args.platform)
-    all_passed &= print_results(
-        "Cross-Compilation Check", success, errors, warnings, info
-    )
+    all_passed &= print_results("Cross-Compilation Check", success, errors, warnings, info)
 
     _print_section("")
     status = "[PASS]" if all_passed else "[FAIL]"

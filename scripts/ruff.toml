@@ -1,0 +1,92 @@
+# Ruff configuration for MLogger project
+# Ruff is a fast Python linter and code formatter
+
+# Target Python version
+target-version = "py38"
+
+# Line length
+line-length = 100
+
+# Exclude patterns
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "*.pyc",
+    "build",
+    "dist",
+    ".eggs",
+    "*.egg-info",
+    "native/external",
+    "unity",
+]
+
+# Enable specific rule sets
+[lint]
+# Select rule categories
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "TID", # flake8-tidy-imports
+    "PIE", # flake8-pie
+    "PL",  # Pylint
+    "TRY", # tryceratops
+    "RUF", # Ruff-specific rules
+]
+
+# Ignore specific rules
+ignore = [
+    "E501",  # Line too long (handled by formatter)
+    "B008",  # Do not perform function calls in argument defaults
+    "B904",  # Allow `raise` without specifying exception classes
+    "PLR0913", # Too many arguments
+    "PLR2004", # Magic value used in comparison
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "UP007",  # Use `X | Y` for type annotations (requires Python 3.10+)
+    "T201",   # Print statements (scripts need print)
+    "T203",   # Pprint statements
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+# Per-file ignores
+[lint.per-file-ignores]
+"scripts/compile/build.py" = [
+    "PLR0912", # Too many branches
+    "PLR0915", # Too many statements
+]
+"scripts/compile/platforms/*.py" = [
+    "PLR0913", # Too many arguments
+]
+
+# isort configuration
+[lint.isort]
+known-first-party = ["platforms", "check"]
+force-single-line = false
+force-sort-within-sections = true
+split-on-trailing-comma = true
+
+# Formatting configuration
+[format]
+# Use double quotes for strings
+quote-style = "double"
+# Use spaces for indentation
+indent-style = "space"
+# Skip magic trailing comma
+skip-magic-trailing-comma = false
+# Line ending style
+line-ending = "auto"
+
+# Type checking (if using mypy)
+[lint.mccabe]
+max-complexity = 10

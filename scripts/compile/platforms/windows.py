@@ -2,8 +2,8 @@ import os
 import re
 import subprocess
 import sys
-import warnings
 from typing import List, Optional
+import warnings
 
 from .base import PlatformBuilder
 
@@ -35,9 +35,7 @@ class WindowsBuilder(PlatformBuilder):
 
         available_generators = ""
         try:
-            result = subprocess.run(
-                ["cmake", "-G"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["cmake", "-G"], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 available_generators = result.stdout
         except (
@@ -71,9 +69,7 @@ class WindowsBuilder(PlatformBuilder):
     def _detect_alternative_generator(self) -> str:
         alternatives = ["MinGW Makefiles", "Ninja", "Unix Makefiles"]
         try:
-            result = subprocess.run(
-                ["cmake", "-G"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["cmake", "-G"], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 for gen in alternatives:
                     if gen in result.stdout:

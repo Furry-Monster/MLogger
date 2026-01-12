@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import sys
 from pathlib import Path
+import sys
 from typing import List, Tuple
 
 
@@ -21,9 +21,7 @@ class ProjectChecker:
             with open(gitmodules_path, "r", encoding="utf-8") as f:
                 for line in f:
                     if line.strip().startswith("path ="):
-                        submodule_paths.append(
-                            self.project_root / line.split("=", 1)[1].strip()
-                        )
+                        submodule_paths.append(self.project_root / line.split("=", 1)[1].strip())
         except IOError as e:
             self.errors.append(f"Failed to read .gitmodules: {e}")
             return False
@@ -98,9 +96,7 @@ class ProjectChecker:
         try:
             content = cmake_file.read_text(encoding="utf-8")
             if "project(" not in content:
-                self.warnings.append(
-                    "CMakeLists.txt may be missing project() declaration"
-                )
+                self.warnings.append("CMakeLists.txt may be missing project() declaration")
             if "add_library" not in content:
                 self.warnings.append("CMakeLists.txt may be missing add_library()")
         except IOError as e:
@@ -129,9 +125,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Project Integrity Check")
-    parser.add_argument(
-        "--project-root", type=Path, default=Path(__file__).parent.parent.parent
-    )
+    parser.add_argument("--project-root", type=Path, default=Path(__file__).parent.parent.parent)
     parser.add_argument("--verbose", "-v", action="store_true")
     args = parser.parse_args()
 

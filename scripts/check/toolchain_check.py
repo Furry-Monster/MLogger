@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
 import os
+from pathlib import Path
 import platform
 import re
 import subprocess
 import sys
-from pathlib import Path
 from typing import List, Optional, Tuple
 
 
@@ -15,18 +15,10 @@ class ToolchainChecker:
         self.warnings: List[str] = []
         self.info: List[str] = []
 
-    def _check_command(
-        self, command: List[str], timeout: int = 5
-    ) -> Tuple[bool, Optional[str]]:
+    def _check_command(self, command: List[str], timeout: int = 5) -> Tuple[bool, Optional[str]]:
         try:
-            result = subprocess.run(
-                command, capture_output=True, text=True, timeout=timeout
-            )
-            return (
-                (True, result.stdout.strip())
-                if result.returncode == 0
-                else (False, None)
-            )
+            result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
+            return (True, result.stdout.strip()) if result.returncode == 0 else (False, None)
         except (FileNotFoundError, subprocess.TimeoutExpired):
             return False, None
 
@@ -49,9 +41,7 @@ class ToolchainChecker:
                 return False
             self.info.append(f"CMake version: {major}.{minor}")
         else:
-            self.info.append(
-                f"CMake found: {output.split()[0] if output else 'unknown'}"
-            )
+            self.info.append(f"CMake found: {output.split()[0] if output else 'unknown'}")
         return True
 
     def check_cmake_generators(self) -> bool:
@@ -60,9 +50,7 @@ class ToolchainChecker:
             self.warnings.append("Could not list CMake generators")
             return False
         lines = [
-            line.strip()
-            for line in output.split("\n")
-            if line.strip() and not line.startswith("*")
+            line.strip() for line in output.split("\n") if line.strip() and not line.startswith("*")
         ]
         vs_generators = [line for line in lines if "Visual Studio" in line]
         mingw_generators = [line for line in lines if "MinGW" in line or "Ninja" in line]
@@ -83,9 +71,7 @@ class ToolchainChecker:
             available, output = self._check_command(["gcc", "--version"])
             if available:
                 version = self._extract_version(output, r"gcc.*?(\d+\.\d+)")
-                self.info.append(
-                    f"MinGW GCC found: {version if version else 'unknown'}"
-                )
+                self.info.append(f"MinGW GCC found: {version if version else 'unknown'}")
                 return True
             self.errors.append("No C compiler found (MSVC or MinGW GCC)")
             return False
@@ -107,9 +93,7 @@ class ToolchainChecker:
             available, output = self._check_command(["g++", "--version"])
             if available:
                 version = self._extract_version(output, r"g\+\+.*?(\d+\.\d+)")
-                self.info.append(
-                    f"MinGW G++ found: {version if version else 'unknown'}"
-                )
+                self.info.append(f"MinGW G++ found: {version if version else 'unknown'}")
                 return True
             self.errors.append("No C++ compiler found (MSVC or MinGW G++)")
             return False
@@ -162,9 +146,7 @@ class ToolchainChecker:
                 f"Python {version.major}.{version.minor} is too old. Requires 3.6 or later."
             )
             return False
-        self.info.append(
-            f"Python version: {version.major}.{version.minor}.{version.micro}"
-        )
+        self.info.append(f"Python version: {version.major}.{version.minor}.{version.micro}")
         return True
 
     def check_environment(self) -> bool:

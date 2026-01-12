@@ -14,48 +14,84 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-# build with position independent code for shared library linking
 set(SPDLOG_BUILD_PIC ON CACHE BOOL "Build position independent code" FORCE)
-
 add_subdirectory(external/spdlog)
 
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
+set(MLOGGER_SOURCES
+    src/core/logger_config.cpp
+    src/core/logger_config.h
+    src/core/logger_manager.cpp
+    src/core/logger_manager.h
+    src/bridge/bridge.cpp
+    src/bridge/bridge.h
+    src/utils/path_utils.cpp
+    src/utils/path_utils.h
+    src/utils/str_utils.cpp
+    src/utils/str_utils.h
 )
 
-file(GLOB_RECURSE SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
-)
+if(WIN32)
+    list(APPEND MLOGGER_SOURCES
+        src/bridge/plateform/bridge_win.cpp
+        src/bridge/plateform/bridge_win.h
+    )
+elseif(ANDROID)
+    list(APPEND MLOGGER_SOURCES
+        src/bridge/plateform/bridge_android.cpp
+        src/bridge/plateform/bridge_android.h
+    )
+elseif(IOS)
+    list(APPEND MLOGGER_SOURCES
+        src/bridge/plateform/bridge_ios.cpp
+        src/bridge/plateform/bridge_ios.h
+    )
+elseif(APPLE)
+    list(APPEND MLOGGER_SOURCES
+        src/bridge/plateform/bridge_macos.cpp
+        src/bridge/plateform/bridge_macos.h
+    )
+else()
+    list(APPEND MLOGGER_SOURCES
+        src/bridge/plateform/bridge_linux.cpp
+        src/bridge/plateform/bridge_linux.h
+    )
+endif()
 
-if(WIN32) # .dll
-    add_library(MLogger SHARED ${SOURCES})
+if(WIN32)
+    add_library(MLogger SHARED ${MLOGGER_SOURCES})
     set_target_properties(MLogger PROPERTIES
         OUTPUT_NAME "mlogger_win"
         PREFIX ""
     )
-elseif(ANDROID) # .so
-    add_library(MLogger SHARED ${SOURCES})
+elseif(ANDROID)
+    add_library(MLogger SHARED ${MLOGGER_SOURCES})
     set_target_properties(MLogger PROPERTIES
         OUTPUT_NAME "mlogger_android"
     )
-elseif(IOS) # .a
-    add_library(MLogger STATIC ${SOURCES})
+elseif(IOS)
+    add_library(MLogger STATIC ${MLOGGER_SOURCES})
     set_target_properties(MLogger PROPERTIES
         OUTPUT_NAME "mlogger_ios"
     )
-elseif(APPLE) # .dylib
-    add_library(MLogger SHARED ${SOURCES})
+elseif(APPLE)
+    add_library(MLogger SHARED ${MLOGGER_SOURCES})
     set_target_properties(MLogger PROPERTIES
         OUTPUT_NAME "mlogger_macos"
     )
-else() # .so
-    add_library(MLogger SHARED ${SOURCES})
+else()
+    add_library(MLogger SHARED ${MLOGGER_SOURCES})
     set_target_properties(MLogger PROPERTIES
         OUTPUT_NAME "mlogger_linux"
     )
 endif()
+
+target_include_directories(MLogger
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
+)
 
 target_link_libraries(MLogger PRIVATE spdlog::spdlog)
 
@@ -70,28 +106,16 @@ if(WIN32)
             WINDOWS_EXPORT_ALL_SYMBOLS ON
         )
     else()
-        # MinGW: Use linker flag to export all symbols
-        target_link_options(MLogger PRIVATE
-            -Wl,--export-all-symbols
-        )
+        target_link_options(MLogger PRIVATE -Wl,--export-all-symbols)
     endif()
 elseif(ANDROID)
-    target_compile_definitions(MLogger PRIVATE
-        ANDROID
-    )
+    target_compile_definitions(MLogger PRIVATE ANDROID)
 endif()
 
 if(MSVC)
-    target_compile_options(MLogger PRIVATE
-        /W4
-        /permissive-
-    )
+    target_compile_options(MLogger PRIVATE /W4 /permissive-)
 else()
-    target_compile_options(MLogger PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-    )
+    target_compile_options(MLogger PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
 install(TARGETS MLogger
@@ -100,85 +124,38 @@ install(TARGETS MLogger
     RUNTIME DESTINATION bin
 )
 
-# Test executable
-option(BUILD_TESTS "Build test executable" ON)
+option(BUILD_TESTS "Build test executables" ON)
+
 if(BUILD_TESTS)
-    add_executable(test_mlogger tests/test_mlogger.cpp)
-    target_link_libraries(test_mlogger PRIVATE MLogger)
-    target_include_directories(test_mlogger PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    # Ensure test can find DLL at runtime on Windows
-    if(WIN32 AND NOT MSVC)
-        set_target_properties(test_mlogger PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    function(add_test_executable test_name test_source)
+        add_executable(${test_name} ${test_source})
+        target_link_libraries(${test_name} PRIVATE MLogger spdlog::spdlog)
+        target_include_directories(${test_name} PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
         )
-    endif()
 
-    add_executable(test_simple tests/test_simple.cpp)
-    target_link_libraries(test_simple PRIVATE MLogger)
-    target_include_directories(test_simple PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    if(WIN32 AND NOT MSVC)
-        set_target_properties(test_simple PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-        )
-    endif()
+        if(WIN32 AND NOT MSVC)
+            set_target_properties(${test_name} PROPERTIES
+                RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+            )
+        endif()
 
-    # C interface test
-    add_executable(test_c_interface tests/test_c_interface.c)
-    target_link_libraries(test_c_interface PRIVATE MLogger)
-    target_include_directories(test_c_interface PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    if(WIN32 AND NOT MSVC)
-        set_target_properties(test_c_interface PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-        )
-    endif()
+        if(MSVC)
+            if(test_source MATCHES "\\.c$")
+                target_compile_options(${test_name} PRIVATE /W4)
+            else()
+                target_compile_options(${test_name} PRIVATE /W4 /permissive-)
+            endif()
+        else()
+            target_compile_options(${test_name} PRIVATE -Wall -Wextra -Wpedantic)
+        endif()
+    endfunction()
 
-    # Enhanced tests
-    add_executable(test_boundary tests/test_boundary.cpp)
-    target_link_libraries(test_boundary PRIVATE MLogger)
-    target_include_directories(test_boundary PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-    add_executable(test_error_handling tests/test_error_handling.cpp)
-    target_link_libraries(test_error_handling PRIVATE MLogger)
-    target_include_directories(test_error_handling PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-    add_executable(test_stress tests/test_stress.cpp)
-    target_link_libraries(test_stress PRIVATE MLogger)
-    target_include_directories(test_stress PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-    add_executable(test_memory tests/test_memory.cpp)
-    target_link_libraries(test_memory PRIVATE MLogger)
-    target_include_directories(test_memory PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-
-    if(WIN32 AND NOT MSVC)
-        set_target_properties(test_boundary PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-        )
-        set_target_properties(test_error_handling PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-        )
-        set_target_properties(test_stress PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-        )
-        set_target_properties(test_memory PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-        )
-    endif()
-
-    if(MSVC)
-        target_compile_options(test_mlogger PRIVATE /W4 /permissive-)
-        target_compile_options(test_simple PRIVATE /W4 /permissive-)
-        target_compile_options(test_c_interface PRIVATE /W4)
-        target_compile_options(test_boundary PRIVATE /W4 /permissive-)
-        target_compile_options(test_error_handling PRIVATE /W4 /permissive-)
-        target_compile_options(test_stress PRIVATE /W4 /permissive-)
-        target_compile_options(test_memory PRIVATE /W4 /permissive-)
-    else()
-        target_compile_options(test_mlogger PRIVATE -Wall -Wextra -Wpedantic)
-        target_compile_options(test_simple PRIVATE -Wall -Wextra -Wpedantic)
-        target_compile_options(test_c_interface PRIVATE -Wall -Wextra -Wpedantic)
-        target_compile_options(test_boundary PRIVATE -Wall -Wextra -Wpedantic)
-        target_compile_options(test_error_handling PRIVATE -Wall -Wextra -Wpedantic)
-        target_compile_options(test_stress PRIVATE -Wall -Wextra -Wpedantic)
-        target_compile_options(test_memory PRIVATE -Wall -Wextra -Wpedantic)
-    endif()
+    add_test_executable(test_mlogger tests/test_mlogger.cpp)
+    add_test_executable(test_simple tests/test_simple.cpp)
+    add_test_executable(test_c_interface tests/test_c_interface.c)
+    add_test_executable(test_boundary tests/test_boundary.cpp)
+    add_test_executable(test_error_handling tests/test_error_handling.cpp)
+    add_test_executable(test_stress tests/test_stress.cpp)
+    add_test_executable(test_memory tests/test_memory.cpp)
 endif()

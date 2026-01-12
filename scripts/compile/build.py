@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
+from pathlib import Path
 import re
 import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
 
 from platforms import (
     AndroidBuilder,
@@ -44,9 +44,7 @@ LIBRARY_NAMES = {
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 NATIVE_DIR = PROJECT_ROOT / "native"
 BUILD_DIR = NATIVE_DIR / "build"
-UNITY_PLUGINS_DIR = (
-    PROJECT_ROOT / "unity" / "Assets" / "Plugins" / "MLogger" / "External"
-)
+UNITY_PLUGINS_DIR = PROJECT_ROOT / "unity" / "Assets" / "Plugins" / "MLogger" / "External"
 
 PLATFORM_BUILDERS = {
     "linux": LinuxBuilder,
@@ -150,20 +148,18 @@ def check_and_clean_cmake_cache(
 
     cached_generator = None
     try:
-        with open(cmake_cache, "r", encoding="utf-8") as f:
+        with open(cmake_cache, encoding="utf-8") as f:
             match = re.search(r"CMAKE_GENERATOR:INTERNAL=(.+)", f.read())
             if match:
                 cached_generator = match.group(1).strip()
-    except (IOError, UnicodeDecodeError, PermissionError) as e:
+    except (OSError, UnicodeDecodeError, PermissionError) as e:
         if verbose:
             print(f"  [WARN] Could not read CMakeCache.txt: {e}")
 
     if cached_generator is None or cached_generator != current_generator:
         if verbose:
             if cached_generator:
-                print(
-                    f"  [INFO] Generator mismatch: {cached_generator} -> {current_generator}"
-                )
+                print(f"  [INFO] Generator mismatch: {cached_generator} -> {current_generator}")
             print("  [INFO] Cleaning CMake cache...")
         _clean_cmake_cache_files(build_dir, verbose)
         return True
@@ -176,15 +172,11 @@ def _print_section(title: str):
     print(SEPARATOR)
 
 
-def _clean_cmake_cache_files(
-    build_dir: Path, verbose: bool = False
-) -> tuple[bool, bool]:
+def _clean_cmake_cache_files(build_dir: Path, verbose: bool = False) -> tuple[bool, bool]:
     cmake_cache = build_dir / "CMakeCache.txt"
     cmake_files_dir = build_dir / "CMakeFiles"
     cache_removed = _remove_file_with_retry(cmake_cache, max_retries=3, retry_delay=0.5)
-    dir_removed = _remove_directory_with_retry(
-        cmake_files_dir, max_retries=3, retry_delay=0.5
-    )
+    dir_removed = _remove_directory_with_retry(cmake_files_dir, max_retries=3, retry_delay=0.5)
     if verbose and not (cache_removed and dir_removed):
         print("  [WARN] Some cache files could not be removed")
         print(f"    CMakeCache.txt removed: {cache_removed}")
@@ -247,9 +239,7 @@ def configure_cmake(
         if compile_commands_src.exists():
             shutil.copy2(compile_commands_src, compile_commands_dst)
             if verbose:
-                print(
-                    f"  [INFO] Copied compile_commands.json to {compile_commands_dst}"
-                )
+                print(f"  [INFO] Copied compile_commands.json to {compile_commands_dst}")
     except subprocess.CalledProcessError:
         print(f"[FAIL] [STEP 1/4] CMake configuration failed for {platform}-{arch}")
         if not verbose:
@@ -257,9 +247,7 @@ def configure_cmake(
         raise
 
 
-def build_project(
-    platform: str, arch: str, builder: "PlatformBuilder", verbose: bool = False
-):
+def build_project(platform: str, arch: str, builder: "PlatformBuilder", verbose: bool = False):
     _print_section(f"[STEP 2/4] BUILD - Building for {platform}-{arch}")
 
     build_dir = builder.build_dir
@@ -297,9 +285,7 @@ def run_tests(
     test_filter: str = None,
 ):
     if not builder.can_run_tests():
-        _print_section(
-            f"[STEP 3/4] TEST - Skipping tests for {platform} (cannot run executables)"
-        )
+        _print_section(f"[STEP 3/4] TEST - Skipping tests for {platform} (cannot run executables)")
         return
 
     title = f"[STEP 3/4] TEST - Running tests for {platform}-{arch}"
@@ -313,9 +299,7 @@ def run_tests(
     exe_ext = builder.get_executable_extension()
 
     if test_filter:
-        test_executables = [
-            t for t in test_executables if test_filter.lower() in t.lower()
-        ]
+        test_executables = [t for t in test_executables if test_filter.lower() in t.lower()]
         if not test_executables:
             print(f"  [WARN] No tests match filter: {test_filter}")
             return
@@ -451,9 +435,7 @@ def main():
         type=str,
         help="Run only tests matching the filter string (case-insensitive)",
     )
-    parser.add_argument(
-        "--skip-copy", action="store_true", help="Skip copying to Unity"
-    )
+    parser.add_argument("--skip-copy", action="store_true", help="Skip copying to Unity")
     parser.add_argument("--generator", type=str, help="CMake generator (Windows only)")
     parser.add_argument(
         "--toolchain",
@@ -462,9 +444,7 @@ def main():
     )
     parser.add_argument("--android-abi", type=str, help="Android ABI")
     parser.add_argument("--ios-sdk", type=str, help="iOS SDK path or name")
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
     parser.add_argument(
         "--clean",
         action="store_true",
@@ -495,9 +475,7 @@ def main():
         kwargs["ios_sdk"] = args.ios_sdk
 
     try:
-        configure_cmake(
-            args.platform, args.arch, builder, args.verbose, args.clean, **kwargs
-        )
+        configure_cmake(args.platform, args.arch, builder, args.verbose, args.clean, **kwargs)
         build_project(args.platform, args.arch, builder, args.verbose)
 
         if not args.skip_tests:
