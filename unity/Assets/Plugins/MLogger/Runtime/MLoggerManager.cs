@@ -12,6 +12,9 @@ namespace MLogger
 
         public static MLoggerConfig CurrentConfig { get; private set; }
 
+        /// <summary>
+        /// This runs before scene loaded in runtime.
+        /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AutoInitialize()
         {
@@ -23,7 +26,8 @@ namespace MLogger
         }
 
         /// <summary>
-        /// Initialize logger with configuration. Handles directory creation, native library initialization, and Unity log handler setup.
+        /// Initialize logger with configuration.
+        /// Handles directory creation, native library initialization, and Unity log handler setup.
         /// </summary>
         public static bool Initialize(MLoggerConfig config)
         {
@@ -199,7 +203,8 @@ namespace MLogger
         }
 
         /// <summary>
-        /// Shutdown logger and cleanup resources. Flushes logs, terminates native library, and restores Unity log handler.
+        /// Shutdown logger and cleanup resources.
+        /// Flushes logs, terminates native library, and restores Unity log handler.
         /// </summary>
         public static void Shutdown()
         {
@@ -219,10 +224,8 @@ namespace MLogger
             {
                 IsInitialized = false;
                 CurrentConfig = null;
-                if (_handler != null)
-                {
-                    _handler = null;
-                }
+                // NOTE: idk how to break the handler binding and switch to default debugger.
+                _handler = null;
             }
         }
 

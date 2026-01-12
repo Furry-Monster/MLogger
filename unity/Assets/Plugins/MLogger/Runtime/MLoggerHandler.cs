@@ -1,9 +1,12 @@
+using System;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace MLogger
 {
     /// <summary>
-    /// Unity ILogHandler implementation that forwards Unity logs to native layer. Handles both formatted logs and exceptions with fallback to default handler.
+    /// Unity ILogHandler implementation that forwards Unity logs to native layer.
+    /// Handles both formatted logs and exceptions with fallback to default handler.
     /// </summary>
     public class MLoggerHandler : ILogHandler
     {
@@ -30,7 +33,7 @@ namespace MLogger
                 {
                     MLoggerNative.logMessage((int)level, message);
                 }
-                catch (System.Exception e)
+                catch (Exception e)
                 {
                     _defaultHandler.LogFormat(LogType.Error, context,
                         "[MLogger] Failed to log to native: {0}", e.Message);
@@ -43,7 +46,7 @@ namespace MLogger
             }
         }
 
-        public void LogException(System.Exception exception, Object context)
+        public void LogException(Exception exception, Object context)
         {
             if (MLoggerManager.IsInitialized && exception != null)
             {
@@ -55,10 +58,10 @@ namespace MLogger
 
                     MLoggerNative.logException(exceptionType, message, stackTrace);
                 }
-                catch (System.Exception e)
+                catch (Exception e)
                 {
                     _defaultHandler.LogException(
-                        new System.Exception("[MLogger] Failed to log exception to native", e),
+                        new Exception("[MLogger] Failed to log exception to native", e),
                         context);
                 }
             }

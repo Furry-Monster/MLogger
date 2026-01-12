@@ -75,14 +75,8 @@ namespace MLogger.Editor
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField($"Lines: {GetLineCount(displayContent)}", GUILayout.Width(100));
-            if (MLoggerManager.IsInitialized)
-            {
-                EditorGUILayout.LabelField("Status: Initialized", GUILayout.Width(150));
-            }
-            else
-            {
-                EditorGUILayout.LabelField("Status: Not Initialized", GUILayout.Width(150));
-            }
+            EditorGUILayout.LabelField(MLoggerManager.IsInitialized ? "Status: Initialized" : "Status: Not Initialized",
+                GUILayout.Width(150));
 
             EditorGUILayout.EndHorizontal();
         }
@@ -105,10 +99,8 @@ namespace MLogger.Editor
             {
                 try
                 {
-                    using (var reader = new StreamReader(logPath))
-                    {
-                        logContent = reader.ReadToEnd();
-                    }
+                    using var reader = new StreamReader(logPath);
+                    logContent = reader.ReadToEnd();
                 }
                 catch (Exception e)
                 {
@@ -123,7 +115,7 @@ namespace MLogger.Editor
             lastRefreshTime = EditorApplication.timeSinceStartup;
         }
 
-        private void OpenLogDirectory()
+        private static void OpenLogDirectory()
         {
             var config = MLoggerSettings.Instance?.Config ?? MLoggerConfig.CreateDefault();
             var logPath = string.IsNullOrEmpty(config.logPath) ? MLoggerConfig.CreateDefault().logPath : config.logPath;
@@ -144,7 +136,7 @@ namespace MLogger.Editor
             }
         }
 
-        private string FilterLogContent(string content, string search)
+        private static string FilterLogContent(string content, string search)
         {
             if (string.IsNullOrEmpty(search))
                 return content;
@@ -152,14 +144,15 @@ namespace MLogger.Editor
             var lines = content.Split('\n');
             var filtered = System.Linq.Enumerable.Where(lines, line =>
                 line.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0);
+
             return string.Join("\n", filtered);
         }
 
-        private int GetLineCount(string content)
+        private static int GetLineCount(string content)
         {
-            if (string.IsNullOrEmpty(content))
-                return 0;
-            return content.Split('\n').Length;
+            return string.IsNullOrEmpty(content)
+                ? 0
+                : content.Split('\n').Length;
         }
     }
 }

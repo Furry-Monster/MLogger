@@ -1,4 +1,6 @@
+using System;
 using System.IO;
+using UnityEditor;
 using UnityEngine;
 
 namespace MLogger
@@ -6,17 +8,13 @@ namespace MLogger
     [CreateAssetMenu(fileName = "MLoggerSettings", menuName = "MLogger/Settings", order = 1)]
     public class MLoggerSettings : ScriptableObject
     {
-        [SerializeField] private MLoggerConfig config = new MLoggerConfig();
+        [SerializeField] private MLoggerConfig config = new();
 
         public MLoggerConfig Config
         {
             get
             {
-                if (config == null)
-                {
-                    config = MLoggerConfig.CreateDefault();
-                }
-
+                config ??= MLoggerConfig.CreateDefault();
                 return config;
             }
             set => config = value;
@@ -29,11 +27,7 @@ namespace MLogger
         {
             get
             {
-                if (_instance == null)
-                {
-                    _instance = Resources.Load<MLoggerSettings>("MLoggerSettings");
-                }
-
+                _instance ??= Resources.Load<MLoggerSettings>("MLoggerSettings");
                 return _instance;
             }
         }
@@ -50,11 +44,12 @@ namespace MLogger
                 var directory = Path.GetDirectoryName(SettingsPath);
                 if (!Directory.Exists(directory))
                 {
-                    Directory.CreateDirectory(directory);
+                    Directory.CreateDirectory(directory ??
+                                              throw new InvalidOperationException("Can't get settings path."));
                 }
 
-                UnityEditor.AssetDatabase.CreateAsset(settings, SettingsPath);
-                UnityEditor.AssetDatabase.SaveAssets();
+                AssetDatabase.CreateAsset(settings, SettingsPath);
+                AssetDatabase.SaveAssets();
                 _instance = settings;
             }
 
