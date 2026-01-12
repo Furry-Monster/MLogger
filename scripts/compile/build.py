@@ -4,9 +4,11 @@ MLogger Native Library Build Script
 """
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from platforms import (
@@ -97,11 +99,105 @@ def get_builder(platform: str, arch: str) -> "PlatformBuilder":
     return builder_class(platform, arch, build_dir, NATIVE_DIR)
 
 
+def _remove_file_with_retry(file_path: Path, max_retries: int = 3, retry_delay: float = 0.5) -> bool:
+    """Remove a file with retry mechanism to handle file locks"""
+    for attempt in range(max_retries):
+        try:
+            if file_path.exists():
+                file_path.unlink()
+            return True
+        except (OSError, PermissionError) as e:
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                continue
+            else:
+                # Last attempt failed, try renaming instead
+                try:
+                    backup_name = file_path.with_suffix(file_path.suffix + ".old")
+                    file_path.rename(backup_name)
+                    return True
+                except (OSError, PermissionError):
+                    return False
+    return False
+
+
+def _remove_directory_with_retry(dir_path: Path, max_retries: int = 3, retry_delay: float = 0.5) -> bool:
+    """Remove a directory with retry mechanism to handle file locks"""
+    for attempt in range(max_retries):
+        try:
+            if dir_path.exists():
+                shutil.rmtree(dir_path)
+            return True
+        except (OSError, PermissionError) as e:
+            if attempt < max_retries - 1:
+                time.sleep(retry_delay)
+                continue
+            else:
+                # Last attempt failed, try renaming instead
+                try:
+                    backup_name = dir_path.with_name(dir_path.name + ".old")
+                    if backup_name.exists():
+                        shutil.rmtree(backup_name)
+                    dir_path.rename(backup_name)
+                    return True
+                except (OSError, PermissionError):
+                    return False
+    return False
+
+
+def check_and_clean_cmake_cache(build_dir: Path, current_generator: str, verbose: bool = False) -> bool:
+    """Check if CMake cache exists and clean it if generator doesn't match"""
+    cmake_cache = build_dir / "CMakeCache.txt"
+    cmake_files_dir = build_dir / "CMakeFiles"
+    
+    if not cmake_cache.exists():
+        return False  # No cache to clean
+    
+    # Read the cached generator from CMakeCache.txt
+    cached_generator = None
+    try:
+        with open(cmake_cache, "r", encoding="utf-8") as f:
+            cache_content = f.read()
+            # Look for CMAKE_GENERATOR in cache
+            match = re.search(r"CMAKE_GENERATOR:INTERNAL=(.+)", cache_content)
+            if match:
+                cached_generator = match.group(1).strip()
+    except (IOError, UnicodeDecodeError, PermissionError) as e:
+        if verbose:
+            print(f"  Warning: Could not read CMakeCache.txt: {e}")
+        # If we can't read it, we'll try to remove it anyway
+    
+    # Check if generator mismatch or couldn't read cache
+    if cached_generator is None or cached_generator != current_generator:
+        if verbose and cached_generator:
+            print(f"  Detected generator mismatch:")
+            print(f"    Cached: {cached_generator}")
+            print(f"    Current: {current_generator}")
+            print(f"  Cleaning CMake cache...")
+        elif verbose:
+            print(f"  Cleaning CMake cache (could not read cached generator)...")
+        
+        # Remove CMakeCache.txt and CMakeFiles directory with retry
+        cache_removed = _remove_file_with_retry(cmake_cache, max_retries=3, retry_delay=0.5)
+        dir_removed = _remove_directory_with_retry(cmake_files_dir, max_retries=3, retry_delay=0.5)
+        
+        if verbose and not (cache_removed and dir_removed):
+            print(f"  Warning: Some cache files could not be removed (may be locked by another process)")
+            print(f"    CMakeCache.txt removed: {cache_removed}")
+            print(f"    CMakeFiles directory removed: {dir_removed}")
+            print(f"    You may need to close other programs using these files and run with --clean")
+        
+        return True  # Attempted to clean cache
+    
+    return False  # Cache exists but generator matches
+
+
 def configure_cmake(
     platform: str,
     arch: str,
     builder: "PlatformBuilder",
     verbose: bool = False,
+    clean: bool = False,
     **kwargs,
 ):
     """Configure CMake"""
@@ -112,8 +208,37 @@ def configure_cmake(
     build_dir = builder.build_dir
     build_dir.mkdir(parents=True, exist_ok=True)
 
+    # Get CMake args to determine the generator
+    cmake_args = builder.get_cmake_args(**kwargs)
+
+    # Extract generator from args
+    current_generator = None
+    for i, arg in enumerate(cmake_args):
+        if arg == "-G" and i + 1 < len(cmake_args):
+            current_generator = cmake_args[i + 1]
+            break
+
+    # Check and clean cache if needed
+    if current_generator:
+        if clean:
+            # Force clean
+            cmake_cache = build_dir / "CMakeCache.txt"
+            cmake_files_dir = build_dir / "CMakeFiles"
+            if cmake_cache.exists() or cmake_files_dir.exists():
+                if verbose:
+                    print("  Force cleaning CMake cache...")
+                cache_removed = _remove_file_with_retry(cmake_cache, max_retries=3, retry_delay=0.5)
+                dir_removed = _remove_directory_with_retry(cmake_files_dir, max_retries=3, retry_delay=0.5)
+                if verbose and not (cache_removed and dir_removed):
+                    print(f"  Warning: Some cache files could not be removed (may be locked)")
+                    print(f"    CMakeCache.txt removed: {cache_removed}")
+                    print(f"    CMakeFiles directory removed: {dir_removed}")
+        else:
+            # Auto-clean if generator mismatch
+            check_and_clean_cmake_cache(build_dir, current_generator, verbose)
+
     args = ["-B", str(build_dir), "-S", str(NATIVE_DIR)]
-    args.extend(builder.get_cmake_args(**kwargs))
+    args.extend(cmake_args)
     args.append("-DCMAKE_BUILD_TYPE=Release")
     args.append("-DBUILD_TESTS=ON")
 
@@ -130,7 +255,7 @@ def configure_cmake(
             stderr=None if verbose else subprocess.STDOUT,
         )
         print(f"✓ [STEP 1/4] CMake configuration completed for {platform}-{arch}")
-        
+
         # Copy compile_commands.json to source directory for clangd/IDE support
         # This helps IDEs find the compilation database for IntelliSense
         compile_commands_src = build_dir / "compile_commands.json"
@@ -294,6 +419,11 @@ def main():
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
+    parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="Force clean CMake cache before configuring",
+    )
 
     args = parser.parse_args()
 
@@ -319,7 +449,9 @@ def main():
         kwargs["ios_sdk"] = args.ios_sdk
 
     try:
-        configure_cmake(args.platform, args.arch, builder, args.verbose, **kwargs)
+        configure_cmake(
+            args.platform, args.arch, builder, args.verbose, args.clean, **kwargs
+        )
         build_project(args.platform, args.arch, builder, args.verbose)
 
         if not args.skip_tests:
