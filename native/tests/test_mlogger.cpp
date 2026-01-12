@@ -43,26 +43,26 @@ void test_initialization()
 
     // Test 1: uninitialized state
     assert(isInit() == 0);
-    std::cout << "  ✓ isInit() returns 0 when not initialized\n";
+    std::cout << "  [OK] isInit() returns 0 when not initialized\n";
 
     // Test 2: default initialization
     const char* log_path = "test_logs/test_default.log";
     int         result   = initDefault(log_path);
     assert(result == 1);
     assert(isInit() == 1);
-    std::cout << "  ✓ initDefault() succeeds\n";
+    std::cout << "  [OK] initDefault() succeeds\n";
 
     // Test 3: terminate
     terminate();
     assert(isInit() == 0);
-    std::cout << "  ✓ terminate() works correctly\n";
+    std::cout << "  [OK] terminate() works correctly\n";
 
     // Test 4: custom configuration initialization (sync mode)
     log_path = "test_logs/test_sync.log";
     result   = init(log_path, 1024 * 1024, 3, 0, 1, LOG_INFO);
     assert(result == 1);
     assert(isInit() == 1);
-    std::cout << "  ✓ init() with sync mode succeeds\n";
+    std::cout << "  [OK] init() with sync mode succeeds\n";
     terminate();
 
     // Test 5: custom configuration initialization (async mode)
@@ -70,7 +70,7 @@ void test_initialization()
     result   = init(log_path, 1024 * 1024, 3, 1, 2, LOG_DEBUG);
     assert(result == 1);
     assert(isInit() == 1);
-    std::cout << "  ✓ init() with async mode succeeds\n";
+    std::cout << "  [OK] init() with async mode succeeds\n";
     terminate();
 
     std::cout << "[PASS] Initialization tests passed\n\n";
@@ -94,7 +94,7 @@ void test_log_levels()
 
     // Test 1: Verify file exists
     assert(fileExists(log_path));
-    std::cout << "  ✓ All log levels written to file\n";
+    std::cout << "  [OK] All log levels written to file\n";
 
     // Test 2: Verify file content
     std::string content = readFileContent(log_path);
@@ -104,7 +104,7 @@ void test_log_levels()
     assert(content.find("WARN message") != std::string::npos);
     assert(content.find("ERROR message") != std::string::npos);
     assert(content.find("CRITICAL message") != std::string::npos);
-    std::cout << "  ✓ All log levels found in file content\n";
+    std::cout << "  [OK] All log levels found in file content\n";
 
     terminate();
     std::cout << "[PASS] Log levels tests passed\n\n";
@@ -128,7 +128,7 @@ void test_log_level_filtering()
 
     // Test 1: Verify file exists
     assert(fileExists(log_path));
-    std::cout << "  ✓ File exists\n";
+    std::cout << "  [OK] File exists\n";
 
     // Test 2: Verify file content
     std::string content = readFileContent(log_path);
@@ -138,7 +138,7 @@ void test_log_level_filtering()
     assert(content.find("WARN") != std::string::npos);
     assert(content.find("ERROR") != std::string::npos);
     assert(content.find("CRITICAL") != std::string::npos);
-    std::cout << "  ✓ Log level filtering works correctly\n";
+    std::cout << "  [OK] Log level filtering works correctly\n";
 
     terminate();
     std::cout << "[PASS] Log level filtering tests passed\n\n";
@@ -154,20 +154,20 @@ void test_set_get_log_level()
     // Test 1: Verify getLogLevel()
     int current_level = getLogLevel();
     assert(current_level >= LOG_TRACE && current_level <= LOG_CRITICAL);
-    std::cout << "  ✓ getLogLevel() returns valid level: " << current_level << "\n";
+    std::cout << "  [OK] getLogLevel() returns valid level: " << current_level << "\n";
 
     // Test 2: Verify setLogLevel()
     setLogLevel(LOG_DEBUG);
     assert(getLogLevel() == LOG_DEBUG);
-    std::cout << "  ✓ setLogLevel(LOG_DEBUG) works\n";
+    std::cout << "  [OK] setLogLevel(LOG_DEBUG) works\n";
 
     setLogLevel(LOG_WARN);
     assert(getLogLevel() == LOG_WARN);
-    std::cout << "  ✓ setLogLevel(LOG_WARN) works\n";
+    std::cout << "  [OK] setLogLevel(LOG_WARN) works\n";
 
     setLogLevel(LOG_ERROR);
     assert(getLogLevel() == LOG_ERROR);
-    std::cout << "  ✓ setLogLevel(LOG_ERROR) works\n";
+    std::cout << "  [OK] setLogLevel(LOG_ERROR) works\n";
 
     terminate();
     std::cout << "[PASS] Set/get log level tests passed\n\n";
@@ -192,7 +192,7 @@ void test_exception_logging()
     std::string content = readFileContent(log_path);
 
     if (content.empty()) {
-        std::cerr << "  ✗ Log file is empty!\n";
+        std::cerr << "  [FAIL] Log file is empty!\n";
         std::abort();
     }
 
@@ -205,22 +205,24 @@ void test_exception_logging()
                      content.find("TestMethod") != std::string::npos;
 
     if (!has_exception && !has_type) {
-        std::cerr << "  ✗ Exception marker not found. Content: " << content.substr(0, 500) << "\n";
+        std::cerr << "  [FAIL] Exception marker not found. Content: " << content.substr(0, 500)
+                  << "\n";
         std::abort();
     }
     if (!has_message) {
-        std::cerr << "  ✗ Exception message not found. Content: " << content.substr(0, 500) << "\n";
+        std::cerr << "  [FAIL] Exception message not found. Content: " << content.substr(0, 500)
+                  << "\n";
         std::abort();
     }
     if (!has_stack) {
-        std::cerr << "  ✗ Stack trace not found. Content: " << content.substr(0, 500) << "\n";
+        std::cerr << "  [FAIL] Stack trace not found. Content: " << content.substr(0, 500) << "\n";
         std::abort();
     }
 
     assert(has_exception || has_type);
     assert(has_message);
     assert(has_stack);
-    std::cout << "  ✓ Exception logging works correctly\n";
+    std::cout << "  [OK] Exception logging works correctly\n";
 
     terminate();
     std::cout << "[PASS] Exception logging tests passed\n\n";
@@ -245,7 +247,7 @@ void test_file_rotation()
 
     // Test 1: Verify main log file exists
     assert(fileExists(log_path));
-    std::cout << "  ✓ Main log file created\n";
+    std::cout << "  [OK] Main log file created\n";
 
     // Test 2: Check for rotated files (.1, .2, etc.)
     bool has_rotation = false;
@@ -253,13 +255,13 @@ void test_file_rotation()
         std::string rotated_file = std::string(log_path) + "." + std::to_string(i);
         if (fileExists(rotated_file.c_str())) {
             has_rotation = true;
-            std::cout << "  ✓ Rotated file found: " << rotated_file << "\n";
+            std::cout << "  [OK] Rotated file found: " << rotated_file << "\n";
             break;
         }
     }
 
     if (has_rotation) {
-        std::cout << "  ✓ File rotation works\n";
+        std::cout << "  [OK] File rotation works\n";
     } else {
         std::cout << "  ⚠ File rotation not triggered (may need more data)\n";
     }
@@ -291,7 +293,7 @@ void test_async_mode()
 
     // Test 2: Verify that the log file contains the expected number of logs
     assert(content.find("Async log message") != std::string::npos);
-    std::cout << "  ✓ Async mode works correctly\n";
+    std::cout << "  [OK] Async mode works correctly\n";
 
     terminate();
     std::cout << "[PASS] Async mode tests passed\n\n";
@@ -335,7 +337,7 @@ void test_concurrent_logging()
         snprintf(search_str, sizeof(search_str), "Thread %d:", t);
         assert(content.find(search_str) != std::string::npos);
     }
-    std::cout << "  ✓ Concurrent logging works correctly\n";
+    std::cout << "  [OK] Concurrent logging works correctly\n";
 
     terminate();
     std::cout << "[PASS] Concurrent logging tests passed\n\n";
@@ -363,7 +365,7 @@ void test_reinitialization()
     // Test 3: Verify that both files exist
     assert(fileExists(log_path1));
     assert(fileExists(log_path2));
-    std::cout << "  ✓ Reinitialization works correctly\n";
+    std::cout << "  [OK] Reinitialization works correctly\n";
 
     terminate();
     std::cout << "[PASS] Reinitialization tests passed\n\n";
@@ -418,7 +420,7 @@ void test_error_callback()
     const char* log_path = "test_logs/test_error_callback.log";
     initDefault(log_path);
     assert(isInit() == 1);
-    std::cout << "  ✓ Error callback set successfully\n";
+    std::cout << "  [OK] Error callback set successfully\n";
 
     // Test 2: Trigger error with invalid log level
     capture.clear();
@@ -469,12 +471,12 @@ void test_error_callback()
         assert(!captured_error.empty());
         assert(!captured_function.empty());
         assert(captured_function == "setLogLevel");
-        std::cout << "  ✓ Error callback captured error in setLogLevel\n";
+        std::cout << "  [OK] Error callback captured error in setLogLevel\n";
     } else {
-        std::cout << "  ✓ Error handled gracefully (validation may prevent callback)\n";
+        std::cout << "  [OK] Error handled gracefully (validation may prevent callback)\n";
     }
 
-    std::cout << "  ✓ Error callback mechanism verified\n";
+    std::cout << "  [OK] Error callback mechanism verified\n";
 
     // Test 7: Callback function throws exception
     manager.setErrorCallback(
@@ -485,7 +487,7 @@ void test_error_callback()
     manager.setErrorCallback(nullptr);
     terminate();
 
-    std::cout << "  ✓ Error callback with exception handling works\n";
+    std::cout << "  [OK] Error callback with exception handling works\n";
     std::cout << "[PASS] Error callback tests passed\n\n";
 }
 
@@ -510,7 +512,7 @@ int main()
         test_error_callback();
 
         std::cout << "========================================\n";
-        std::cout << "All tests passed! ✓\n";
+        std::cout << "All tests passed! [OK]\n";
         std::cout << "========================================\n";
 
         return 0;

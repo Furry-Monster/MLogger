@@ -1,13 +1,24 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+
+#ifdef _WIN32
+#    include <windows.h>
+#    define sleep_ms(ms) Sleep(ms)
+#else
+#    include <unistd.h>
+#    define sleep_ms(ms) usleep((ms) * 1000)
+#endif
 
 #include "../src/bridge/bridge.h"
 
 // utils
 int file_exists(const char* path)
 {
+#ifdef _WIN32
+    return GetFileAttributesA(path) != INVALID_FILE_ATTRIBUTES;
+#else
     return access(path, F_OK) == 0;
+#endif
 }
 
 long get_file_size(const char* path)
@@ -29,50 +40,50 @@ int test_initialization(void)
 
     // Test uninitialized state
     if (isInit() != 0) {
-        printf("  ✗ isInit() should return 0 when not initialized\n");
+        printf("  [FAIL] isInit() should return 0 when not initialized\n");
         return 0;
     }
-    printf("  ✓ isInit() returns 0 when not initialized\n");
+    printf("  [OK] isInit() returns 0 when not initialized\n");
 
     // Test default initialization
     const char* log_path = "test_logs/c_test_default.log";
     int         result   = initDefault(log_path);
     if (result != 1) {
-        printf("  ✗ initDefault() failed\n");
+        printf("  [FAIL] initDefault() failed\n");
         return 0;
     }
     if (isInit() != 1) {
-        printf("  ✗ isInit() should return 1 after initialization\n");
+        printf("  [FAIL] isInit() should return 1 after initialization\n");
         return 0;
     }
-    printf("  ✓ initDefault() succeeds\n");
+    printf("  [OK] initDefault() succeeds\n");
 
     // Cleanup
     terminate();
     if (isInit() != 0) {
-        printf("  ✗ isInit() should return 0 after terminate()\n");
+        printf("  [FAIL] isInit() should return 0 after terminate()\n");
         return 0;
     }
-    printf("  ✓ terminate() works correctly\n");
+    printf("  [OK] terminate() works correctly\n");
 
     // Test custom initialization (sync mode)
     log_path = "test_logs/c_test_sync.log";
     result   = init(log_path, 1024 * 1024, 3, 0, 1, LOG_INFO);
     if (result != 1) {
-        printf("  ✗ init() with sync mode failed\n");
+        printf("  [FAIL] init() with sync mode failed\n");
         return 0;
     }
-    printf("  ✓ init() with sync mode succeeds\n");
+    printf("  [OK] init() with sync mode succeeds\n");
     terminate();
 
     // Test custom initialization (async mode)
     log_path = "test_logs/c_test_async.log";
     result   = init(log_path, 1024 * 1024, 3, 1, 2, LOG_DEBUG);
     if (result != 1) {
-        printf("  ✗ init() with async mode failed\n");
+        printf("  [FAIL] init() with async mode failed\n");
         return 0;
     }
-    printf("  ✓ init() with async mode succeeds\n");
+    printf("  [OK] init() with async mode succeeds\n");
     terminate();
 
     printf("[PASS] Initialization tests passed\n\n");
@@ -86,7 +97,7 @@ int test_log_levels(void)
 
     const char* log_path = "test_logs/c_test_levels.log";
     if (init(log_path, 1024 * 1024, 3, 0, 1, LOG_TRACE) != 1) {
-        printf("  ✗ Failed to initialize logger\n");
+        printf("  [FAIL] Failed to initialize logger\n");
         return 0;
     }
 
@@ -102,19 +113,19 @@ int test_log_levels(void)
 
     // Verify file was created
     if (!file_exists(log_path)) {
-        printf("  ✗ Log file was not created\n");
+        printf("  [FAIL] Log file was not created\n");
         terminate();
         return 0;
     }
 
     long file_size = get_file_size(log_path);
     if (file_size == 0) {
-        printf("  ✗ Log file is empty\n");
+        printf("  [FAIL] Log file is empty\n");
         terminate();
         return 0;
     }
 
-    printf("  ✓ All log levels written to file (size: %ld bytes)\n", file_size);
+    printf("  [OK] All log levels written to file (size: %ld bytes)\n", file_size);
     terminate();
 
     printf("[PASS] Log levels tests passed\n\n");
@@ -128,7 +139,7 @@ int test_log_level_filtering(void)
 
     const char* log_path = "test_logs/c_test_filtering.log";
     if (init(log_path, 1024 * 1024, 3, 0, 1, LOG_WARN) != 1) {
-        printf("  ✗ Failed to initialize logger\n");
+        printf("  [FAIL] Failed to initialize logger\n");
         return 0;
     }
 
@@ -143,7 +154,7 @@ int test_log_level_filtering(void)
     flush();
 
     long file_size = get_file_size(log_path);
-    printf("  ✓ Log level filtering applied (file size: %ld bytes)\n", file_size);
+    printf("  [OK] Log level filtering applied (file size: %ld bytes)\n", file_size);
     terminate();
 
     printf("[PASS] Log level filtering tests passed\n\n");
@@ -157,43 +168,43 @@ int test_set_get_log_level(void)
 
     const char* log_path = "test_logs/c_test_set_get.log";
     if (initDefault(log_path) != 1) {
-        printf("  ✗ Failed to initialize logger\n");
+        printf("  [FAIL] Failed to initialize logger\n");
         return 0;
     }
 
     // Get current log level
     int current_level = getLogLevel();
     if (current_level < LOG_TRACE || current_level > LOG_CRITICAL) {
-        printf("  ✗ getLogLevel() returned invalid level: %d\n", current_level);
+        printf("  [FAIL] getLogLevel() returned invalid level: %d\n", current_level);
         terminate();
         return 0;
     }
-    printf("  ✓ getLogLevel() returns valid level: %d\n", current_level);
+    printf("  [OK] getLogLevel() returns valid level: %d\n", current_level);
 
     // Set different log levels
     setLogLevel(LOG_DEBUG);
     if (getLogLevel() != LOG_DEBUG) {
-        printf("  ✗ setLogLevel(LOG_DEBUG) failed\n");
+        printf("  [FAIL] setLogLevel(LOG_DEBUG) failed\n");
         terminate();
         return 0;
     }
-    printf("  ✓ setLogLevel(LOG_DEBUG) works\n");
+    printf("  [OK] setLogLevel(LOG_DEBUG) works\n");
 
     setLogLevel(LOG_WARN);
     if (getLogLevel() != LOG_WARN) {
-        printf("  ✗ setLogLevel(LOG_WARN) failed\n");
+        printf("  [FAIL] setLogLevel(LOG_WARN) failed\n");
         terminate();
         return 0;
     }
-    printf("  ✓ setLogLevel(LOG_WARN) works\n");
+    printf("  [OK] setLogLevel(LOG_WARN) works\n");
 
     setLogLevel(LOG_ERROR);
     if (getLogLevel() != LOG_ERROR) {
-        printf("  ✗ setLogLevel(LOG_ERROR) failed\n");
+        printf("  [FAIL] setLogLevel(LOG_ERROR) failed\n");
         terminate();
         return 0;
     }
-    printf("  ✓ setLogLevel(LOG_ERROR) works\n");
+    printf("  [OK] setLogLevel(LOG_ERROR) works\n");
 
     terminate();
     printf("[PASS] Set/get log level tests passed\n\n");
@@ -207,7 +218,7 @@ int test_exception_logging(void)
 
     const char* log_path = "test_logs/c_test_exception.log";
     if (init(log_path, 1024 * 1024, 3, 0, 1, LOG_ERROR) != 1) {
-        printf("  ✗ Failed to initialize logger\n");
+        printf("  [FAIL] Failed to initialize logger\n");
         return 0;
     }
 
@@ -219,22 +230,22 @@ int test_exception_logging(void)
     flush();
 
     // Wait a bit for file system to sync
-    usleep(100000);   // 100ms
+    sleep_ms(100);   // 100ms
 
     if (!file_exists(log_path)) {
-        printf("  ✗ Exception log file was not created\n");
+        printf("  [FAIL] Exception log file was not created\n");
         terminate();
         return 0;
     }
 
     long file_size = get_file_size(log_path);
     if (file_size == 0) {
-        printf("  ✗ Exception log file is empty\n");
+        printf("  [FAIL] Exception log file is empty\n");
         terminate();
         return 0;
     }
 
-    printf("  ✓ Exception logging works (file size: %ld bytes)\n", file_size);
+    printf("  [OK] Exception logging works (file size: %ld bytes)\n", file_size);
     terminate();
 
     printf("[PASS] Exception logging tests passed\n\n");
@@ -248,7 +259,7 @@ int test_flush(void)
 
     const char* log_path = "test_logs/c_test_flush.log";
     if (initDefault(log_path) != 1) {
-        printf("  ✗ Failed to initialize logger\n");
+        printf("  [FAIL] Failed to initialize logger\n");
         return 0;
     }
 
@@ -263,16 +274,16 @@ int test_flush(void)
     flush();
 
     // Wait a bit for file system to sync
-    usleep(100000);   // 100ms
+    sleep_ms(100);   // 100ms
 
     long file_size = get_file_size(log_path);
     if (file_size == 0) {
-        printf("  ✗ Log file is empty after flush\n");
+        printf("  [FAIL] Log file is empty after flush\n");
         terminate();
         return 0;
     }
 
-    printf("  ✓ Flush operation works (file size: %ld bytes)\n", file_size);
+    printf("  [OK] Flush operation works (file size: %ld bytes)\n", file_size);
     terminate();
 
     printf("[PASS] Flush tests passed\n\n");
@@ -289,25 +300,25 @@ int test_reinitialization(void)
 
     // First initialization
     if (initDefault(log_path1) != 1) {
-        printf("  ✗ First initialization failed\n");
+        printf("  [FAIL] First initialization failed\n");
         return 0;
     }
     logMessage(LOG_INFO, "First initialization");
     if (isInit() != 1) {
-        printf("  ✗ Logger should be initialized\n");
+        printf("  [FAIL] Logger should be initialized\n");
         terminate();
         return 0;
     }
 
     // Reinitialize with different path
     if (initDefault(log_path2) != 1) {
-        printf("  ✗ Reinitialization failed\n");
+        printf("  [FAIL] Reinitialization failed\n");
         terminate();
         return 0;
     }
     logMessage(LOG_INFO, "Second initialization");
     if (isInit() != 1) {
-        printf("  ✗ Logger should be initialized after reinit\n");
+        printf("  [FAIL] Logger should be initialized after reinit\n");
         terminate();
         return 0;
     }
@@ -316,17 +327,17 @@ int test_reinitialization(void)
 
     // Verify both files exist
     if (!file_exists(log_path1)) {
-        printf("  ✗ First log file was not created\n");
+        printf("  [FAIL] First log file was not created\n");
         terminate();
         return 0;
     }
     if (!file_exists(log_path2)) {
-        printf("  ✗ Second log file was not created\n");
+        printf("  [FAIL] Second log file was not created\n");
         terminate();
         return 0;
     }
 
-    printf("  ✓ Reinitialization works correctly\n");
+    printf("  [OK] Reinitialization works correctly\n");
     terminate();
 
     printf("[PASS] Reinitialization tests passed\n\n");
@@ -340,7 +351,11 @@ int main(void)
     printf("========================================\n\n");
 
     // Create test logs directory
+#ifdef _WIN32
+    system("if not exist test_logs mkdir test_logs");
+#else
     system("mkdir -p test_logs");
+#endif
 
     int all_passed = 1;
 
@@ -353,14 +368,20 @@ int main(void)
     if (!test_flush()) all_passed = 0;
     if (!test_reinitialization()) all_passed = 0;
 
+    // Ensure all async operations complete
+    flush();
+    sleep_ms(200);   // Wait for async operations
+
     printf("========================================\n");
     if (all_passed) {
-        printf("All tests passed! ✓\n");
+        printf("All tests passed! [OK]\n");
         printf("========================================\n");
+        fflush(stdout);
         return 0;
     } else {
-        printf("Some tests failed! ✗\n");
+        printf("Some tests failed! [FAIL]\n");
         printf("========================================\n");
+        fflush(stdout);
         return 1;
     }
 }

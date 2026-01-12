@@ -63,10 +63,18 @@ if(WIN32)
     target_compile_definitions(MLogger PRIVATE
         _CRT_SECURE_NO_WARNINGS
         NOMINMAX
+        BUILDING_DLL
     )
-    set_target_properties(MLogger PROPERTIES
-        WINDOWS_EXPORT_ALL_SYMBOLS ON
-    )
+    if(MSVC)
+        set_target_properties(MLogger PROPERTIES
+            WINDOWS_EXPORT_ALL_SYMBOLS ON
+        )
+    else()
+        # MinGW: Use linker flag to export all symbols
+        target_link_options(MLogger PRIVATE
+            -Wl,--export-all-symbols
+        )
+    endif()
 elseif(ANDROID)
     target_compile_definitions(MLogger PRIVATE
         ANDROID
@@ -98,15 +106,31 @@ if(BUILD_TESTS)
     add_executable(test_mlogger tests/test_mlogger.cpp)
     target_link_libraries(test_mlogger PRIVATE MLogger)
     target_include_directories(test_mlogger PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    # Ensure test can find DLL at runtime on Windows
+    if(WIN32 AND NOT MSVC)
+        set_target_properties(test_mlogger PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+    endif()
 
     add_executable(test_simple tests/test_simple.cpp)
     target_link_libraries(test_simple PRIVATE MLogger)
     target_include_directories(test_simple PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    if(WIN32 AND NOT MSVC)
+        set_target_properties(test_simple PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+    endif()
 
     # C interface test
     add_executable(test_c_interface tests/test_c_interface.c)
     target_link_libraries(test_c_interface PRIVATE MLogger)
     target_include_directories(test_c_interface PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    if(WIN32 AND NOT MSVC)
+        set_target_properties(test_c_interface PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+        )
+    endif()
 
     if(MSVC)
         target_compile_options(test_mlogger PRIVATE /W4 /permissive-)

@@ -13,12 +13,12 @@ int main()
     std::cout << "  isInit(): " << isInit() << "\n";
 
     if (result == 1 && isInit() == 1) {
-        std::cout << "  ✓ Success!\n";
+        std::cout << "  [OK] Success!\n";
         logMessage(LOG_INFO, "Test message from simple test");
         flush();
         terminate();
     } else {
-        std::cout << "  ✗ Failed!\n";
+        std::cout << "  [FAIL] Failed!\n";
         return 1;
     }
 
@@ -29,10 +29,10 @@ int main()
     std::cout << "  isInit(): " << isInit() << "\n";
 
     if (result == 1 && isInit() == 1) {
-        std::cout << "  ✓ Success!\n";
+        std::cout << "  [OK] Success!\n";
         terminate();
     } else {
-        std::cout << "  ✗ Failed!\n";
+        std::cout << "  [FAIL] Failed!\n";
         return 1;
     }
 
@@ -43,10 +43,10 @@ int main()
     std::cout << "  isInit(): " << isInit() << "\n";
 
     if (result == 1 && isInit() == 1) {
-        std::cout << "  ✓ Success!\n";
+        std::cout << "  [OK] Success!\n";
         terminate();
     } else {
-        std::cout << "  ✗ Failed!\n";
+        std::cout << "  [FAIL] Failed!\n";
         return 1;
     }
 

@@ -99,7 +99,9 @@ def get_builder(platform: str, arch: str) -> "PlatformBuilder":
     return builder_class(platform, arch, build_dir, NATIVE_DIR)
 
 
-def _remove_file_with_retry(file_path: Path, max_retries: int = 3, retry_delay: float = 0.5) -> bool:
+def _remove_file_with_retry(
+    file_path: Path, max_retries: int = 3, retry_delay: float = 0.5
+) -> bool:
     """Remove a file with retry mechanism to handle file locks"""
     for attempt in range(max_retries):
         try:
@@ -121,7 +123,9 @@ def _remove_file_with_retry(file_path: Path, max_retries: int = 3, retry_delay: 
     return False
 
 
-def _remove_directory_with_retry(dir_path: Path, max_retries: int = 3, retry_delay: float = 0.5) -> bool:
+def _remove_directory_with_retry(
+    dir_path: Path, max_retries: int = 3, retry_delay: float = 0.5
+) -> bool:
     """Remove a directory with retry mechanism to handle file locks"""
     for attempt in range(max_retries):
         try:
@@ -145,14 +149,16 @@ def _remove_directory_with_retry(dir_path: Path, max_retries: int = 3, retry_del
     return False
 
 
-def check_and_clean_cmake_cache(build_dir: Path, current_generator: str, verbose: bool = False) -> bool:
+def check_and_clean_cmake_cache(
+    build_dir: Path, current_generator: str, verbose: bool = False
+) -> bool:
     """Check if CMake cache exists and clean it if generator doesn't match"""
     cmake_cache = build_dir / "CMakeCache.txt"
     cmake_files_dir = build_dir / "CMakeFiles"
-    
+
     if not cmake_cache.exists():
         return False  # No cache to clean
-    
+
     # Read the cached generator from CMakeCache.txt
     cached_generator = None
     try:
@@ -166,7 +172,7 @@ def check_and_clean_cmake_cache(build_dir: Path, current_generator: str, verbose
         if verbose:
             print(f"  Warning: Could not read CMakeCache.txt: {e}")
         # If we can't read it, we'll try to remove it anyway
-    
+
     # Check if generator mismatch or couldn't read cache
     if cached_generator is None or cached_generator != current_generator:
         if verbose and cached_generator:
@@ -176,19 +182,27 @@ def check_and_clean_cmake_cache(build_dir: Path, current_generator: str, verbose
             print(f"  Cleaning CMake cache...")
         elif verbose:
             print(f"  Cleaning CMake cache (could not read cached generator)...")
-        
+
         # Remove CMakeCache.txt and CMakeFiles directory with retry
-        cache_removed = _remove_file_with_retry(cmake_cache, max_retries=3, retry_delay=0.5)
-        dir_removed = _remove_directory_with_retry(cmake_files_dir, max_retries=3, retry_delay=0.5)
-        
+        cache_removed = _remove_file_with_retry(
+            cmake_cache, max_retries=3, retry_delay=0.5
+        )
+        dir_removed = _remove_directory_with_retry(
+            cmake_files_dir, max_retries=3, retry_delay=0.5
+        )
+
         if verbose and not (cache_removed and dir_removed):
-            print(f"  Warning: Some cache files could not be removed (may be locked by another process)")
+            print(
+                f"  Warning: Some cache files could not be removed (may be locked by another process)"
+            )
             print(f"    CMakeCache.txt removed: {cache_removed}")
             print(f"    CMakeFiles directory removed: {dir_removed}")
-            print(f"    You may need to close other programs using these files and run with --clean")
-        
+            print(
+                f"    You may need to close other programs using these files and run with --clean"
+            )
+
         return True  # Attempted to clean cache
-    
+
     return False  # Cache exists but generator matches
 
 
@@ -227,10 +241,16 @@ def configure_cmake(
             if cmake_cache.exists() or cmake_files_dir.exists():
                 if verbose:
                     print("  Force cleaning CMake cache...")
-                cache_removed = _remove_file_with_retry(cmake_cache, max_retries=3, retry_delay=0.5)
-                dir_removed = _remove_directory_with_retry(cmake_files_dir, max_retries=3, retry_delay=0.5)
+                cache_removed = _remove_file_with_retry(
+                    cmake_cache, max_retries=3, retry_delay=0.5
+                )
+                dir_removed = _remove_directory_with_retry(
+                    cmake_files_dir, max_retries=3, retry_delay=0.5
+                )
                 if verbose and not (cache_removed and dir_removed):
-                    print(f"  Warning: Some cache files could not be removed (may be locked)")
+                    print(
+                        f"  Warning: Some cache files could not be removed (may be locked)"
+                    )
                     print(f"    CMakeCache.txt removed: {cache_removed}")
                     print(f"    CMakeFiles directory removed: {dir_removed}")
         else:
@@ -254,7 +274,7 @@ def configure_cmake(
             stdout=None if verbose else subprocess.DEVNULL,
             stderr=None if verbose else subprocess.STDOUT,
         )
-        print(f"✓ [STEP 1/4] CMake configuration completed for {platform}-{arch}")
+        print(f"[OK] [STEP 1/4] CMake configuration completed for {platform}-{arch}")
 
         # Copy compile_commands.json to source directory for clangd/IDE support
         # This helps IDEs find the compilation database for IntelliSense
@@ -265,7 +285,7 @@ def configure_cmake(
             if verbose:
                 print(f"  Copied compile_commands.json to {compile_commands_dst}")
     except subprocess.CalledProcessError:
-        print(f"✗ [STEP 1/4] CMake configuration failed for {platform}-{arch}")
+        print(f"[FAIL] [STEP 1/4] CMake configuration failed for {platform}-{arch}")
         if not verbose:
             print("  (Use --verbose to see detailed error messages)")
         raise
@@ -299,9 +319,9 @@ def build_project(
             stdout=None if verbose else subprocess.DEVNULL,
             stderr=None if verbose else subprocess.STDOUT,
         )
-        print(f"✓ [STEP 2/4] Build completed for {platform}-{arch}")
+        print(f"[OK] [STEP 2/4] Build completed for {platform}-{arch}")
     except subprocess.CalledProcessError:
-        print(f"✗ [STEP 2/4] Build failed for {platform}-{arch}")
+        print(f"[FAIL] [STEP 2/4] Build failed for {platform}-{arch}")
         if not verbose:
             print("  (Use --verbose to see detailed error messages)")
         raise
@@ -345,15 +365,15 @@ def run_tests(
                 stdout=None if verbose else subprocess.DEVNULL,
                 stderr=None if verbose else subprocess.STDOUT,
             )
-            print(f"  ✓ {test_name} passed")
+            print(f"  [OK] {test_name} passed")
         except subprocess.CalledProcessError:
-            print(f"  ✗ {test_name} failed")
+            print(f"  [FAIL] {test_name} failed")
             all_passed = False
 
     if not all_passed:
         raise RuntimeError(f"Some tests failed for {platform}-{arch}")
 
-    print(f"✓ [STEP 3/4] All tests passed for {platform}-{arch}")
+    print(f"[OK] [STEP 3/4] All tests passed for {platform}-{arch}")
 
 
 def copy_library_to_unity(
@@ -365,13 +385,34 @@ def copy_library_to_unity(
     print(f"{'=' * 60}")
 
     build_dir = builder.build_dir
-    lib_dir = build_dir / "lib"
     library_name = LIBRARY_NAMES[platform]
+
+    # On Windows, DLL is in bin directory, not lib
+    if platform == "windows":
+        lib_dir = build_dir / "bin"
+    else:
+        lib_dir = build_dir / "lib"
 
     source_path = builder.get_library_path(lib_dir, library_name)
 
     if not source_path.exists():
-        raise FileNotFoundError(f"Library file not found: {source_path}")
+        # Try alternative locations
+        alt_paths = [
+            build_dir / "bin" / library_name,
+            build_dir / "lib" / library_name,
+        ]
+        for alt_path in alt_paths:
+            if alt_path.exists():
+                source_path = alt_path
+                if verbose:
+                    print(f"  Found library at alternative location: {source_path}")
+                break
+        else:
+            raise FileNotFoundError(
+                f"Library file not found: {source_path}\n"
+                f"  Searched in: {lib_dir}\n"
+                f"  Also tried: {[str(p) for p in alt_paths]}"
+            )
 
     unity_platform_dir = PLATFORM_UNITY_MAP[platform]
     unity_arch_dir = ARCH_UNITY_MAP[arch]
@@ -384,8 +425,31 @@ def copy_library_to_unity(
         print(f"Source: {source_path}")
         print(f"Target: {target_path}")
 
-    shutil.copy2(source_path, target_path)
-    print(f"✓ [STEP 4/4] Copied {library_name} to {unity_target_dir}")
+    try:
+        # On Windows, DLL might be in bin directory instead of lib
+        if platform == "windows" and not source_path.exists():
+            # Try bin directory for Windows DLL
+            bin_dir = build_dir / "bin"
+            alt_source_path = bin_dir / library_name
+            if alt_source_path.exists():
+                source_path = alt_source_path
+                if verbose:
+                    print(f"  Found library in bin directory: {source_path}")
+
+        if verbose:
+            print(f"  Copying from: {source_path}")
+            print(f"  Copying to: {target_path}")
+
+        # Use copy instead of copy2 to avoid metadata issues
+        shutil.copy(source_path, target_path)
+        print(f"[OK] [STEP 4/4] Copied {library_name} to {unity_target_dir}")
+    except Exception as e:
+        print(f"[FAIL] [STEP 4/4] Failed to copy library: {e}")
+        if verbose:
+            import traceback
+
+            traceback.print_exc()
+        raise
 
 
 def main():
