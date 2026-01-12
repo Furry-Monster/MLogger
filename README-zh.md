@@ -2,11 +2,13 @@
 
 基于 [spdlog](https://github.com/gabime/spdlog) 的高性能 Unity 日志插件，提供跨平台的原生日志记录功能。
 
+![performance](docs/performance.png)
+
+## 主要特性
+
 ![log_viewer](docs/log_viewer.png)
 
 ![proj_setting](docs/proj_setting.png)
-
-## 主要特性
 
 - 高性能 - 基于 spdlog 的异步日志系统，对游戏性能影响极小
 - 文件滚动 - 自动管理日志文件大小和数量，防止日志文件过大
