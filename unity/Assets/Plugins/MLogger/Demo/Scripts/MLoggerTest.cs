@@ -2,9 +2,6 @@ using UnityEngine;
 
 namespace MLogger
 {
-    /// <summary>
-    /// MLogger Unity test
-    /// </summary>
     public class MLoggerTest : MonoBehaviour
     {
         [Header("Test Settings")] [Tooltip("Whether to auto-run tests on Start")]
@@ -34,43 +31,31 @@ namespace MLogger
             Debug.Log("=== MLogger Test Suite Complete ===");
         }
 
-        /// <summary>
-        /// Test initialization status
-        /// </summary>
         private void TestInitialization()
         {
             Debug.Log("[Test] Checking initialization status...");
             if (MLoggerManager.IsInitialized)
             {
-                Debug.Log($"[Test] ✓ MLogger is initialized. Log path: {MLoggerManager.CurrentConfig?.logPath}");
+                Debug.Log($"[Test] MLogger is initialized. Log path: {MLoggerManager.CurrentConfig?.logPath}");
             }
             else
             {
-                Debug.LogWarning("[Test] ✗ MLogger is not initialized");
+                Debug.LogWarning("[Test] MLogger is not initialized");
             }
         }
 
-        /// <summary>
-        /// Test various log levels
-        /// </summary>
         private void TestLogLevels()
         {
             Debug.Log("[Test] Testing log levels...");
-
             Debug.Log($"[Test] Info: {testMessage}");
             Debug.LogWarning($"[Test] Warning: {testMessage}");
             Debug.LogError($"[Test] Error: {testMessage}");
-
-            Debug.Log("[Test] ✓ Log levels test complete");
+            Debug.Log("[Test] Log levels test complete");
         }
 
-        /// <summary>
-        /// Test exception logging
-        /// </summary>
         private void TestExceptionLogging()
         {
             Debug.Log("[Test] Testing exception logging...");
-
             try
             {
                 throw new System.Exception("Test Exception for MLogger");
@@ -79,41 +64,27 @@ namespace MLogger
             {
                 Debug.LogException(e);
             }
-
-            Debug.Log("[Test] ✓ Exception logging test complete");
+            Debug.Log("[Test] Exception logging test complete");
         }
 
-        /// <summary>
-        /// Test log level settings
-        /// </summary>
         private void TestLogLevelSettings()
         {
             Debug.Log("[Test] Testing log level settings...");
-
             var currentLevel = MLoggerManager.GetLogLevel();
             Debug.Log($"[Test] Current log level: {currentLevel}");
-
-            // Test setting different log levels
             MLoggerManager.SetLogLevel(LogLevel.Debug);
             Debug.Log($"[Test] Set log level to Debug: {MLoggerManager.GetLogLevel()}");
-
             MLoggerManager.SetLogLevel(LogLevel.Warn);
             Debug.Log($"[Test] Set log level to Warn: {MLoggerManager.GetLogLevel()}");
-
-            // Restore original level
             MLoggerManager.SetLogLevel(currentLevel);
-
-            Debug.Log("[Test] ✓ Log level settings test complete");
+            Debug.Log("[Test] Log level settings test complete");
         }
 
-        /// <summary>
-        /// Test flush functionality
-        /// </summary>
         private void TestFlush()
         {
             Debug.Log("[Test] Testing flush...");
             MLoggerManager.Flush();
-            Debug.Log("[Test] ✓ Flush test complete");
+            Debug.Log("[Test] Flush test complete");
         }
 
         [ContextMenu("Manual Initialize")]

@@ -1,5 +1,3 @@
-"""Platform-specific build modules"""
-
 from .android import AndroidBuilder
 from .base import PlatformBuilder
 from .ios import IOSBuilder

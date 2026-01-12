@@ -4,26 +4,14 @@ using UnityEngine;
 
 namespace MLogger
 {
-    /// <summary>
-    /// MLogger manager, handles initialization and lifecycle
-    /// </summary>
     public static class MLoggerManager
     {
         private static MLoggerHandler _handler;
 
-        /// <summary>
-        /// Whether the logger is initialized
-        /// </summary>
         public static bool IsInitialized { get; private set; } = false;
 
-        /// <summary>
-        /// Current configuration
-        /// </summary>
         public static MLoggerConfig CurrentConfig { get; private set; }
 
-        /// <summary>
-        /// Auto-initialize at runtime (called when Unity starts)
-        /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void AutoInitialize()
         {
@@ -35,10 +23,8 @@ namespace MLogger
         }
 
         /// <summary>
-        /// Initialize with configuration
+        /// Initialize logger with configuration. Handles directory creation, native library initialization, and Unity log handler setup.
         /// </summary>
-        /// <param name="config">Configuration object</param>
-        /// <returns>Whether initialization succeeded</returns>
         public static bool Initialize(MLoggerConfig config)
         {
             if (config == null)
@@ -53,7 +39,6 @@ namespace MLogger
                 Shutdown();
             }
 
-            // Ensure log directory exists
             var logPath = config.logPath;
             if (string.IsNullOrEmpty(logPath))
             {
@@ -74,7 +59,6 @@ namespace MLogger
                 }
             }
 
-            // Call Native initialization
             var result = 0;
             try
             {
@@ -109,11 +93,8 @@ namespace MLogger
             {
                 IsInitialized = true;
                 CurrentConfig = config;
-
-                // Replace Unity log handler
                 _handler = new MLoggerHandler(config.alsoLogToUnity);
                 Debug.unityLogger.logHandler = _handler;
-
                 Debug.Log($"[MLogger] Initialized successfully. Log path: {logPath}");
                 return true;
             }
@@ -124,11 +105,6 @@ namespace MLogger
             }
         }
 
-        /// <summary>
-        /// Initialize with default configuration
-        /// </summary>
-        /// <param name="logPath">Log file path (Optional)</param>
-        /// <returns>Whether initialization succeeded</returns>
         public static bool InitializeDefault(string logPath = null)
         {
             var config = MLoggerConfig.CreateDefault();
@@ -140,9 +116,6 @@ namespace MLogger
             return Initialize(config);
         }
 
-        /// <summary>
-        /// Get default log path
-        /// </summary>
         private static string GetDefaultLogPath()
         {
 #if UNITY_EDITOR
@@ -156,9 +129,6 @@ namespace MLogger
 #endif
         }
 
-        /// <summary>
-        /// Load configuration (from ScriptableObject or default values)
-        /// </summary>
         private static MLoggerConfig LoadConfig()
         {
             var settings = MLoggerSettings.Instance;
@@ -180,10 +150,6 @@ namespace MLogger
             return MLoggerConfig.CreateDefault();
         }
 
-        /// <summary>
-        /// Set log level
-        /// </summary>
-        /// <param name="level">Log level</param>
         public static void SetLogLevel(LogLevel level)
         {
             if (!IsInitialized)
@@ -199,10 +165,6 @@ namespace MLogger
             }
         }
 
-        /// <summary>
-        /// Get current log level
-        /// </summary>
-        /// <returns>Log level</returns>
         public static LogLevel GetLogLevel()
         {
             if (!IsInitialized)
@@ -221,9 +183,6 @@ namespace MLogger
             return LogLevel.Info;
         }
 
-        /// <summary>
-        /// Flush log buffer
-        /// </summary>
         public static void Flush()
         {
             if (!IsInitialized)
@@ -240,7 +199,7 @@ namespace MLogger
         }
 
         /// <summary>
-        /// Shutdown and cleanup resources
+        /// Shutdown logger and cleanup resources. Flushes logs, terminates native library, and restores Unity log handler.
         /// </summary>
         public static void Shutdown()
         {
@@ -260,28 +219,19 @@ namespace MLogger
             {
                 IsInitialized = false;
                 CurrentConfig = null;
-
-                // Restore default log handler
                 if (_handler != null)
                 {
-                    // Keep original logHandler, no longer force reset
                     _handler = null;
                 }
             }
         }
 
-        /// <summary>
-        /// Auto cleanup when application quits
-        /// </summary>
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void OnSubsystemRegistration()
         {
             Application.quitting += OnApplicationQuitting;
         }
 
-        /// <summary>
-        /// Application quit callback
-        /// </summary>
         private static void OnApplicationQuitting()
         {
             Shutdown();
