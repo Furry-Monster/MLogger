@@ -2,7 +2,7 @@
 
 High-performance Unity logging plugin based on [spdlog](https://github.com/gabime/spdlog), providing cross-platform native logging functionality.
 
-![editor_viewer](docs/editor_viewer.png)
+![log_viewer](docs/log_viewer.png)
 
 ![proj_setting](docs/proj_setting.png)
 
@@ -32,7 +32,8 @@ MLogger/
 │   ├── src/            # Source code
 │   │   ├── core/       # Core logger manager
 │   │   ├── bridge/     # C interface bridge
-│   │   └── utils/      # Utility classes
+│   │   └── utils/      # Utility classes (path and string utilities)
+│   ├── tests/          # Native layer test suites
 │   └── external/       # Third-party dependencies (spdlog)
 ├── unity/              # Unity C# plugin layer
 │   └── Assets/
@@ -52,6 +53,21 @@ MLogger/
 - Python 3.6+
 - CMake 3.20+
 - Platform-specific build toolchain (Visual Studio, GCC, Xcode, etc.)
+
+### Build Options
+
+The build script supports several options:
+
+```bash
+# Force clean build (removes CMake cache)
+python scripts/compile/build.py --platform linux --clean
+
+# Build with tests
+python scripts/compile/build.py --platform linux --test
+
+# Build with retry on failure
+python scripts/compile/build.py --platform linux --retry 3
+```
 
 ### Build All Platforms
 
@@ -182,9 +198,36 @@ In **Edit > Project Settings > MLogger**, you can:
 In **Window > MLogger > Log Viewer**, you can:
 
 - View log file content in real-time
-- Search and filter logs
-- Auto-refresh functionality
-- View log statistics
+- **File Selection** - Switch between multiple log files (including rotated historical files)
+- **Level Filtering** - Filter logs by level (Trace/Debug/Info/Warn/Error/Critical)
+- **Advanced Search** - Search with keywords or regular expressions
+- **Syntax Highlighting** - Color-coded log levels for better readability
+- **Auto-refresh** - Automatically refresh log content at configurable intervals
+- **Statistics** - View log statistics (total lines, counts by level, file size)
+- **Export** - Export filtered logs as text or CSV files
+- **Clean Tools** - Clean log files by size, time, or count
+
+## Testing
+
+The project includes comprehensive test suites:
+
+### Native Layer Tests
+
+Located in `native/tests/`, including:
+- **Basic Tests** (`test_mlogger.cpp`) - Core functionality tests
+- **Boundary Tests** (`test_boundary.cpp`) - Edge cases and extreme configurations
+- **Error Handling** (`test_error_handling.cpp`) - Invalid paths, permission issues, etc.
+- **Stress Tests** (`test_stress.cpp`) - High-frequency logging and concurrency tests
+- **Memory Tests** (`test_memory.cpp`) - Memory operations and edge cases
+
+Run tests with:
+```bash
+python scripts/compile/build.py --platform linux --test
+```
+
+### Unity Layer Tests
+
+Test scripts are located in `unity/Assets/Plugins/MLogger/Demo/` for runtime testing.
 
 ## Examples
 

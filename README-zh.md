@@ -2,7 +2,7 @@
 
 基于 [spdlog](https://github.com/gabime/spdlog) 的高性能 Unity 日志插件，提供跨平台的原生日志记录功能。
 
-![editor_viewer](docs/editor_viewer.png)
+![log_viewer](docs/log_viewer.png)
 
 ![proj_setting](docs/proj_setting.png)
 
@@ -32,7 +32,8 @@ MLogger/
 │   ├── src/            # 源代码
 │   │   ├── core/       # 核心日志管理器
 │   │   ├── bridge/     # C 接口桥接层
-│   │   └── utils/      # 工具类
+│   │   └── utils/      # 工具类（路径和字符串处理工具）
+│   ├── tests/          # Native 层测试套件
 │   └── external/       # 第三方依赖（spdlog）
 ├── unity/              # Unity C# 插件层
 │   └── Assets/
@@ -52,6 +53,21 @@ MLogger/
 - Python 3.6+
 - CMake 3.20+
 - 对应平台的编译工具链（如 Visual Studio、GCC、Xcode 等）
+
+### 构建选项
+
+构建脚本支持多个选项：
+
+```bash
+# 强制清理构建（移除 CMake 缓存）
+python scripts/compile/build.py --platform linux --clean
+
+# 构建并运行测试
+python scripts/compile/build.py --platform linux --test
+
+# 失败时重试
+python scripts/compile/build.py --platform linux --retry 3
+```
 
 ### 构建所有平台
 
@@ -182,9 +198,36 @@ MLoggerManager.Initialize(config);
 在 **Window > MLogger > Log Viewer** 中可以：
 
 - 实时查看日志文件内容
-- 搜索和过滤日志
-- 自动刷新功能
-- 查看日志统计信息
+- **文件选择** - 在多个日志文件之间切换（包括滚动后的历史文件）
+- **级别过滤** - 按日志级别过滤（Trace/Debug/Info/Warn/Error/Critical）
+- **高级搜索** - 使用关键词或正则表达式搜索
+- **语法高亮** - 不同日志级别使用不同颜色显示，提高可读性
+- **自动刷新** - 按可配置的时间间隔自动刷新日志内容
+- **统计信息** - 查看日志统计（总行数、各级别数量、文件大小）
+- **导出功能** - 将过滤后的日志导出为文本或 CSV 文件
+- **清理工具** - 按大小、时间或数量清理日志文件
+
+## 测试
+
+项目包含完整的测试套件：
+
+### Native 层测试
+
+位于 `native/tests/`，包括：
+- **基础测试** (`test_mlogger.cpp`) - 核心功能测试
+- **边界测试** (`test_boundary.cpp`) - 边界条件和极端配置测试
+- **错误处理测试** (`test_error_handling.cpp`) - 无效路径、权限问题等
+- **压力测试** (`test_stress.cpp`) - 高频日志输出和并发测试
+- **内存测试** (`test_memory.cpp`) - 内存操作和边缘情况测试
+
+运行测试：
+```bash
+python scripts/compile/build.py --platform linux --test
+```
+
+### Unity 层测试
+
+测试脚本位于 `unity/Assets/Plugins/MLogger/Demo/`，用于运行时测试。
 
 ## 示例
 

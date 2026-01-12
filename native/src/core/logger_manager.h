@@ -14,7 +14,7 @@ namespace mlogger
 
 using ErrorCallback = std::function<void(const char*, const char*)>;
 
-class LoggerManager
+class LoggerManager final
 {
 public:
     static LoggerManager& getInstance();
@@ -40,7 +40,7 @@ public:
 
 private:
     LoggerManager() = default;
-    ~LoggerManager();
+    ~LoggerManager() noexcept;
 
     std::shared_ptr<spdlog::logger>       logger_;
     std::shared_ptr<spdlog::async_logger> async_logger_;

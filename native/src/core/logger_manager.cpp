@@ -273,7 +273,7 @@ void LoggerManager::terminate()
     async_mode_  = false;
 }
 
-LoggerManager::~LoggerManager()
+LoggerManager::~LoggerManager() noexcept
 {
     terminate();
 }

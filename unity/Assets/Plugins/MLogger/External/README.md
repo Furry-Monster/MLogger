@@ -1,8 +1,8 @@
-# Native 库文件目录
+# Native Library Directory
 
-此目录包含各平台的 Native 库文件。
+This directory contains the native library files for each supported platform.
 
-## 目录结构
+## Directory Structure
 
 ```
 External/
@@ -24,9 +24,9 @@ External/
     └── arm64/          # iOS ARM 64-bit
 ```
 
-## 注意事项
+## Notes
 
-- 确保库文件名称与 `MLoggerNative.cs` 中的 DLL 名称一致
+- Make sure the library file names are consistent with the DLL names specified in `MLoggerNative.cs`
 - Linux: `libmlogger_linux.so`
 - Windows: `mlogger_win.dll`
 - macOS: `libmlogger_macos.dylib`
