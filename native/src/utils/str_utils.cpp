@@ -2,8 +2,6 @@
 
 namespace mlogger
 {
-namespace utils
-{
 
 std::string formatExceptionMessage(const char* exception_type, const char* message,
                                    const char* stack_trace)
@@ -32,5 +30,4 @@ std::string safeString(const char* str)
     return str ? std::string(str) : std::string();
 }
 
-}   // namespace utils
 }   // namespace mlogger

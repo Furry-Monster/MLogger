@@ -34,7 +34,7 @@ bool LoggerManager::initialize(const LoggerConfig& config)
 
     try {
         // prepare directory
-        if (!utils::ensureDirectoryExists(config.log_path)) {
+        if (!ensureDirectoryExists(config.log_path)) {
             throw std::runtime_error("Failed to create log directory");
         }
 
@@ -146,8 +146,7 @@ void LoggerManager::logException(const char* exception_type, const char* message
     }
 
     try {
-        std::string full_message =
-            utils::formatExceptionMessage(exception_type, message, stack_trace);
+        std::string full_message = formatExceptionMessage(exception_type, message, stack_trace);
         logger_->error(full_message);
     } catch (const std::exception& e) {
         reportError("logException", e.what());

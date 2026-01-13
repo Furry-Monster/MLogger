@@ -3,8 +3,6 @@
 
 namespace mlogger
 {
-namespace utils
-{
 
 bool ensureDirectoryExists(const std::filesystem::path& file_path)
 {
@@ -52,5 +50,4 @@ bool isValidPath(const std::string& path)
     }
 }
 
-}   // namespace utils
 }   // namespace mlogger

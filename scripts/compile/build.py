@@ -401,16 +401,51 @@ def copy_library_to_unity(
         print(f"  Copying from: {source_path}")
         print(f"  Copying to: {target_path}")
 
-    try:
-        shutil.copy(source_path, target_path)
-        print(f"[PASS] [STEP 4/4] Copied {library_name} to {unity_target_dir}")
-    except Exception as e:
-        print(f"[FAIL] [STEP 4/4] Failed to copy library: {e}")
+    # Try to remove existing target file if it exists (may be locked by Unity)
+    if target_path.exists():
         if verbose:
-            import traceback
+            print(f"  Target file exists, attempting to remove it first...")
+        if not _remove_file_with_retry(target_path, max_retries=5, retry_delay=1.0):
+            error_msg = (
+                f"Failed to remove existing file: {target_path}\n"
+                f"  This usually means the file is locked by Unity Editor.\n"
+                f"  Please close Unity Editor and try again, or manually delete the file."
+            )
+            print(f"[FAIL] [STEP 4/4] {error_msg}")
+            raise PermissionError(error_msg)
 
-            traceback.print_exc()
-        raise
+    # Try to copy with retry mechanism
+    max_retries = 3
+    retry_delay = 0.5
+    for attempt in range(max_retries):
+        try:
+            shutil.copy(source_path, target_path)
+            print(f"[PASS] [STEP 4/4] Copied {library_name} to {unity_target_dir}")
+            return
+        except (OSError, PermissionError) as e:
+            if attempt < max_retries - 1:
+                if verbose:
+                    print(f"  Copy attempt {attempt + 1} failed, retrying in {retry_delay}s...")
+                time.sleep(retry_delay)
+            else:
+                error_msg = (
+                    f"Failed to copy library after {max_retries} attempts: {e}\n"
+                    f"  Source: {source_path}\n"
+                    f"  Target: {target_path}\n"
+                    f"  This usually means the target file is locked by Unity Editor.\n"
+                    f"  Please close Unity Editor and try again."
+                )
+                print(f"[FAIL] [STEP 4/4] {error_msg}")
+                if verbose:
+                    import traceback
+                    traceback.print_exc()
+                raise PermissionError(error_msg) from e
+        except Exception as e:
+            print(f"[FAIL] [STEP 4/4] Failed to copy library: {e}")
+            if verbose:
+                import traceback
+                traceback.print_exc()
+            raise
 
 
 def main():
